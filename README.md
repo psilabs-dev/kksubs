@@ -173,8 +173,8 @@ The "factory" style is applied in the absence of any styling from the user side,
 
 ## Style Fields
 
-| style field ID | name | values |
-| - | - | - |
+| style field ID | name | values | description |
+| - | - | - | - |
 | `text_data.font` | font | "default"<br/>path to a TTF font |
 | `text_data.size` | font size | positive int | 
 | `text_data.color` | font fill color | color<br/>[int, int, int] |
@@ -184,4 +184,4 @@ The "factory" style is applied in the absence of any styling from the user side,
 | `box_data.align_h` | horizontal alignment | "left"<br/>"right"<br/>"center" |
 | `box_data.align_v` | vertical alignment | "bottom"<br/>"top"<br/>"center" |
 | `box_data.box_width` | text width | positive int |
-| `box_data.anchor` | textbox anchor point | [int, int] |
+| `box_data.anchor` | textbox anchor point | [int, int] | Anchors the subtitle textbox to a point on the image. Default position is the center of the image.<br/><br/>The anchor's positional relation to the textbox depends on horizontal and vertical alignment. |
