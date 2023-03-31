@@ -8,7 +8,7 @@ from kksubs.data import BaseData, BoxData, Style, Subtitle, TextData
 logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
-    base_data.field_name:base_data.get_default() for base_data in [TextData, BoxData, Style]
+    base_data.field_name:base_data() for base_data in [TextData, BoxData, Style]
 }
 
 def get_inherited_style_ids(input_style_id) -> List[str]:
@@ -141,6 +141,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
 
     # correct subtitle styling data.
     for subtitle in subtitles:
+        subtitle.style.coalesce(styles.get("default"))
         subtitle.style.coalesce(Style.get_default())
         subtitle.style.correct_values()
 
