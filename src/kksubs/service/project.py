@@ -44,7 +44,7 @@ def add_subtitles(project_directory:str, draft:str, image_filters:List[int]=None
         os.makedirs(draft_output_dir, exist_ok=True)
 
     # extract subtitle styles (if any)
-    styles_path = os.path.realpath(os.path.join(project_directory, "styles"))
+    styles_path = os.path.realpath(os.path.join(project_directory, "styles.yml"))
     if not os.path.exists(styles_path):
         logger.warning("No styles configured: will use default styles or ones found in draft.")
         styles_contents = list()
@@ -65,8 +65,9 @@ def add_subtitles(project_directory:str, draft:str, image_filters:List[int]=None
         filtered_image_paths = list(map(lambda j:image_paths[j], filter(lambda i:i < len(image_paths), image_filters)))
     logger.info(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
 
+    num_of_images = len(filtered_image_paths)
     # subtitle the images
-    for image_path in filtered_image_paths:
+    for i, image_path in enumerate(filtered_image_paths):
         image_id = os.path.basename(image_path)
         image = Image.open(image_path)
 
@@ -78,5 +79,7 @@ def add_subtitles(project_directory:str, draft:str, image_filters:List[int]=None
             
         save_path = os.path.join(draft_output_dir, image_id)
         subtitled_image.save(save_path)
+        logger.info(f"Added subtitles to image {i+1}/{num_of_images}.")
 
+    logger.info(f"Finished adding subtitles to {num_of_images} images.")
     return 0
