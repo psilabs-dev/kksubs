@@ -1,13 +1,10 @@
 from typing import List
-from PIL import Image, ImageFont
+from PIL import Image, ImageFont, ImageFilter
 
 from kksubs.data import Subtitle
 from kksubs.service.processors import create_text_layer
 
-# TODO: add subtitling logic + image processing logic
-def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, get_box=None) -> Image.Image:
-    if get_box is None:
-        get_box = False
+def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
 
     # expand subtitle.
     style = subtitle.style
@@ -33,11 +30,26 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, get_box=None) ->
     font = ImageFont.truetype(font_style, font_size)
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, coords)
+    
+    outline_data = style.outline_data
+
+    if outline_data is not None:
+        outline_color = outline_data.color
+        outline_size = outline_data.size
+        outline_blur = outline_data.blur
+        outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, coords)
+        outline_base = outline_layer
+        if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
+            outline_base = image.copy()
+            outline_base.paste(outline_layer, (0, 0), outline_layer)
+            outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
+            outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
+            pass
+        # outline_layer.show()
+        image.paste(outline_base, (0, 0), outline_layer)
+        pass
 
     image.paste(text_layer, (0, 0), text_layer)
-
-    if not get_box:
-        return image
     
     return image
 

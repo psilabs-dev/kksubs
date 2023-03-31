@@ -121,6 +121,44 @@ class TextData(BaseData):
 
     pass
 
+class OutlineData(BaseData):
+    field_name = "outline_data"
+
+    def __init__(
+            self,
+            color=None, size=None, blur=None,
+    ):
+        self.color = color
+        self.size = size
+        self.blur = blur
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return OutlineData(
+            color="yellow",
+            size=5,
+            blur=0,
+        )
+    
+    @classmethod
+    def from_dict(cls, outline_dict=None):
+        if outline_dict is None:
+            return None
+        return OutlineData(**outline_dict)
+    
+    def coalesce(self, other:"OutlineData"):
+        if other is None:
+            return
+        self.color = coalesce(self.color, other.color)
+        self.size = coalesce(self.size, other.size)
+        self.blur = coalesce(self.blur, other.blur)
+
+    def correct_values(self):
+        self.color = to_rgb_color(self.color)
+        self.size = to_integer(self.size)
+        self.blur = to_integer(self.blur)
+
 class BoxData(BaseData):
     field_name = "box_data"
 
@@ -171,10 +209,12 @@ class Style(BaseData):
             self, 
             style_id:str=None, 
             text_data:TextData=None,
+            outline_data:OutlineData=None,
             box_data:BoxData=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
+        self.outline_data = outline_data
         self.box_data = box_data
         pass
 
@@ -183,6 +223,7 @@ class Style(BaseData):
         return Style(
             style_id="",
             text_data=TextData.get_default(),
+            # stroke_data=StrokeData.get_default(),
             box_data=BoxData.get_default(),
         )
 
@@ -193,6 +234,7 @@ class Style(BaseData):
         return Style(
             style_id=style_dict.get("style_id"),
             text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
+            outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
             box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name))
         )
     
@@ -204,6 +246,10 @@ class Style(BaseData):
             self.text_data = other.text_data
         else:
             self.text_data.coalesce(other.text_data)
+        if self.outline_data is None:
+            self.outline_data = other.outline_data
+        else:
+            self.outline_data.coalesce(other.outline_data)
         if self.box_data is None:
             self.box_data = other.box_data
         else:
@@ -211,6 +257,9 @@ class Style(BaseData):
 
     def correct_values(self):
         self.text_data.correct_values()
+        if self.outline_data is not None:
+            self.outline_data.coalesce(OutlineData.get_default())
+            self.outline_data.correct_values()
         self.box_data.correct_values()
 
     pass
