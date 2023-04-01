@@ -11,15 +11,14 @@ def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
         grid4_x, grid4_y = grid4
         tb_anchor_x = int(image_width//4*grid4_x)
         tb_anchor_y = int(image_height//4*grid4_y)
-        
-        if nudge is not None: # if there is anchor point data, use it to fine-tune.
-            x_nudge, y_nudge = nudge
-            tb_anchor_x = tb_anchor_x + x_nudge
-            tb_anchor_y = tb_anchor_y - y_nudge
     else:
         tb_anchor_x, tb_anchor_y = anchor
         tb_anchor_x = image_width/2 + tb_anchor_x
         tb_anchor_y = image_height/2 - tb_anchor_y
+    if nudge is not None: # if there is anchor point data, use it to fine-tune.
+        x_nudge, y_nudge = nudge
+        tb_anchor_x = tb_anchor_x + x_nudge
+        tb_anchor_y = tb_anchor_y - y_nudge
 
     return tb_anchor_x, tb_anchor_y
 
