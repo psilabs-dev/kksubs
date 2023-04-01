@@ -198,7 +198,7 @@ def extract_subtitles(draft_body:str, styles:Dict[str, Style]) -> Dict[str, List
         image_id = image_block_split[0].strip()
 
         if len(image_block_split) == 1:
-            subtitles[image_id] = [Subtitle([], style=Style.get_default())]
+            subtitles[image_id] = [Subtitle([], style=Style.get_default().corrected())]
             continue
 
         image_subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)

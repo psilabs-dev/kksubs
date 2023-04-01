@@ -16,8 +16,8 @@ class TestExtractSubtitles(unittest.TestCase):
         subtitles = extract_subtitles(draft_body=read_input, styles=dict())
         solution = {
             "1.png": [
-                Subtitle(content=["some content"], style=Style.get_default()),
-                Subtitle(content=["some more content"], style=Style.get_default()),
+                Subtitle(content=["some content"], style=Style.get_default().corrected()),
+                Subtitle(content=["some more content"], style=Style.get_default().corrected()),
             ]
         }
 
@@ -34,11 +34,11 @@ class TestExtractSubtitles(unittest.TestCase):
         subtitles = extract_subtitles(draft_body=read_input, styles=dict())
         solution = {
             "1.png": [
-                Subtitle(content=["some content"], style=Style.get_default()),
+                Subtitle(content=["some content"], style=Style.get_default().corrected()),
                 # Subtitle(content=["some more content"], style=Style.get_default()),
             ],
             "2.png": [
-                Subtitle(content=[], style=Style.get_default())
+                Subtitle(content=[], style=Style.get_default().corrected())
             ]
         }
 
@@ -52,7 +52,7 @@ class TestExtractSubtitles(unittest.TestCase):
         subtitles = extract_subtitles(draft_body=read_input, styles=dict())
         solution = {
             "1.png": [
-                Subtitle(content=["first line", "second line"], style=Style.get_default()),
+                Subtitle(content=["first line", "second line"], style=Style.get_default().corrected()),
             ]
         }
 

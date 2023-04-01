@@ -76,6 +76,10 @@ class BaseData(ABC):
     @abstractmethod
     def correct_values(self):
         ...
+
+    def corrected(self):
+        self.correct_values()
+        return self
     
     pass
 
