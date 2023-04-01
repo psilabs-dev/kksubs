@@ -8,14 +8,14 @@ from kksubs.data import BaseData, BoxData, OutlineData, Style, Subtitle, TextDat
 logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
-    base_data.field_name:base_data() for base_data in [TextData, OutlineData, BoxData, Style]
+    base_data.field_name:base_data for base_data in [TextData, OutlineData, BoxData, Style]
 }
 
 def get_inherited_style_ids(input_style_id) -> List[str]:
     # returns parent profile ID or None.
     match = re.search(r'\((.*?)\)', input_style_id)
     if match:
-        return match.group(1).split(",")
+        return list(map(lambda grp: grp.strip(), match.group(1).split(",")))
     return []
 
 def is_valid_nested_attribute(style:BaseData, nested_attribute:str) -> bool:
@@ -25,7 +25,7 @@ def is_valid_nested_attribute(style:BaseData, nested_attribute:str) -> bool:
     
     # check if attribute corresponds to a style.
     if attributes[0] in default_style_by_field_name.keys():
-        return is_valid_nested_attribute(default_style_by_field_name[attributes[0]], ".".join(attributes[1:]))
+        return is_valid_nested_attribute(default_style_by_field_name[attributes[0]](), ".".join(attributes[1:]))
     
     raise KeyError(style.field_name, nested_attribute)
 
@@ -36,7 +36,7 @@ def give_attributes_to_style(base_style:Style, attributes:List[str], value):
         return setattr(base_style, attributes[0], value)
     
     if getattr(base_style, attributes[0]) is None:
-        setattr(base_style, attributes[0], default_style_by_field_name[attributes[0]])
+        setattr(base_style, attributes[0], default_style_by_field_name[attributes[0]]())
     return give_attributes_to_style(getattr(base_style, attributes[0]), attributes[1:], value)
 
 def add_data_to_style(line:str, subtitle:Subtitle, styles:Dict[str, Style]):
@@ -70,7 +70,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
         # print(line, line.split(":", 1))
         if len(line.split(":", 1)) == 2:
             # print("ping")
-            return is_valid_nested_attribute(default_style_by_field_name["style"], line.split(":")[0])
+            return is_valid_nested_attribute(default_style_by_field_name["style"](), line.split(":")[0])
         return False
         # return any(line.startswith(key+":") for key in style_keys)
     
