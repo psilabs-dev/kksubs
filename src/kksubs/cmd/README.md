@@ -33,6 +33,10 @@ Clear a specific directory, such as `output/draft`.
 ```
 >>> kksubs-compose --clear -d draft
 ```
+Force clear a directory without a confirmation step.
+```
+>>> kksubs-compose -cf
+```
 
 ## Renaming images
 Use the `kksubs-rename` command to rename/standardize images in the `images` directory, and apply the filename changes to every draft in the `drafts` directory.
