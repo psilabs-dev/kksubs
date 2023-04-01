@@ -55,6 +55,11 @@ To apply subtitles from a draft (e.g. `draft1.txt`) to all the images (from the 
 from kksubs import add_subtitles
 add_subtitles('.', 'draft1.txt')
 ```
+You can also run this from the command line.
+```
+>>> kksubs-compose -d draft1.txt
+```
+See [commands](/src/kksubs/cmd/README.md) for more information.
 
 ## Editing a Draft
 A basic `kksubs` draft has the following structure:
