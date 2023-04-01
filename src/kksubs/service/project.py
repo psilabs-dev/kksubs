@@ -1,5 +1,6 @@
 import os
 import logging
+import shutil
 from PIL import Image
 from typing import Dict, List
 import yaml
@@ -144,3 +145,34 @@ class Project:
             logger.info(f"Finished adding subtitles to {num_of_images} images for draft {draft}")
 
         return 0
+    
+    # Delete folders in output directory.
+    def clear_subtitles(self, drafts:Dict[str, List[int]]=None, in_terminal=False):
+        # remove outputs corresponding to a draft.
+        # if drafts is None, remove all folders in the output directory.
+
+        if drafts is None:
+            folders = list(filter(lambda dir:os.path.isdir(os.path.join(self.outputs_dir, dir)), os.listdir(self.outputs_dir)))
+            if not folders:
+                print("Output directory has no folders to delete.")
+                return 0
+
+            # print(folders)
+            if in_terminal:
+                print(f"Clear these output folders and contents? {folders}")
+
+            confirmation = input("Enter y to confirm: ") if in_terminal else "y"
+            if confirmation == "y":
+                for folder in folders:
+                    shutil.rmtree(os.path.join(self.outputs_dir, folder))
+                return 0
+            return 0
+
+        for draft in drafts:
+            draft_name = os.path.splitext(draft)[0]
+            draft_output_dir = os.path.join(self.outputs_dir, draft_name)
+            if os.path.exists(draft_output_dir):
+                shutil.rmtree(draft_output_dir)
+
+        return 0
+    

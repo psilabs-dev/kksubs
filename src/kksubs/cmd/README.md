@@ -1,4 +1,7 @@
 # commands
+> Documentation for some terminal commands in `kksubs`.
+
+## Add and remove subtitles
 
 From the project root directory, add subtitles from `draft.txt` using the `kksubs-compose` command.
 
@@ -12,6 +15,14 @@ Add a `-p` flag to specify project path.
 Run the following to apply subtitles from all drafts.
 ```
 >>> kksubs-compose
+```
+Clear subtitled images in the output directory.
+```
+>>> kksubs-compose --clear
+```
+Clear a specific directory, such as `output/draft`.
+```
+>>> kksubs-compose --clear -d draft
 ```
 
 ## Renaming images

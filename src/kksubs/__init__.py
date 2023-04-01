@@ -11,3 +11,7 @@ def rename_images(project_directory:str=None):
 def add_subtitles(project_directory:str=None, drafts:Dict[str, List[int]]=None):
     logger.info("Adding subtitles.")
     return Project(project_directory=project_directory).add_subtitles(drafts=drafts)
+
+def clear_subtitles(project_directory:str=None, drafts:Dict[str, List[int]]=None):
+    logger.info("Clearing subtitles.")
+    return Project(project_directory=project_directory).clear_subtitles(drafts=drafts, in_terminal=True)
