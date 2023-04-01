@@ -15,16 +15,12 @@ def _get_text_dimensions(text_string:str, font:ImageFont.FreeTypeFont, default_t
 def create_text_layer(
         image:Image.Image, font:ImageFont.FreeTypeFont, content:List[str],
         color, size, stroke_color, stroke_size,
-        align_h, align_v, box_width, coords
+        align_h, align_v, box_width, tb_anchor_x, tb_anchor_y
 ) -> Image.Image:
     image_width, image_height = image.size
 
     text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
     text_draw = ImageDraw.Draw(text_layer)
-
-    tb_anchor_x, tb_anchor_y = coords
-    tb_anchor_x = image_width/2 + tb_anchor_x
-    tb_anchor_y = image_height/2 - tb_anchor_y
 
     default_text_width, default_text_height = _get_text_dimensions("l", font)
 

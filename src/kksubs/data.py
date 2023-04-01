@@ -88,7 +88,7 @@ class TextData(BaseData):
             size=None, color=None, 
             stroke_size=None, stroke_color=None
     ):
-        self.font = font # TODO: if font is None, use default font.
+        self.font = font
         self.size = size
         self.color = color
         self.stroke_size = stroke_size
@@ -119,6 +119,9 @@ class TextData(BaseData):
         self.stroke_color = coalesce(self.stroke_color, other.stroke_color)
 
     def correct_values(self):
+        if self.font is not None:
+            assert(isinstance(self.font, str))
+
         self.size = to_integer(self.size)
         self.color = to_rgb_color(self.color)
         self.stroke_size = to_integer(self.stroke_size)
@@ -171,12 +174,16 @@ class BoxData(BaseData):
             self, 
             align_h=None, align_v=None, 
             box_width=None, 
-            coords=None,
+            anchor=None,
+            grid4=None,
+            nudge=None,
     ):
         self.align_h = align_h
         self.align_v = align_v
         self.box_width = box_width
-        self.coords = coords
+        self.anchor = anchor
+        self.grid4 = grid4
+        self.nudge = nudge
         pass
 
     @classmethod
@@ -184,7 +191,7 @@ class BoxData(BaseData):
         return BoxData(
             align_h="center", align_v="center",
             box_width=30,
-            coords=(0, 0),
+            anchor=(0, 0),
         )
 
     @classmethod
@@ -199,13 +206,20 @@ class BoxData(BaseData):
         self.align_h = coalesce(self.align_h, other.align_h)
         self.align_v = coalesce(self.align_v, other.align_v)
         self.box_width = coalesce(self.box_width, other.box_width)
-        self.coords = coalesce(self.coords, other.coords)
+
+        if self.anchor is None and self.grid4 is None:
+            self.anchor = other.anchor
+            self.grid4 = other.grid4
+
+        self.nudge = coalesce(self.nudge, other.nudge)
 
     def correct_values(self):
         self.align_h = to_validated_value(self.align_h, {"left", "right", "center"})
         self.align_v = to_validated_value(self.align_v, {"bottom", "top", "center"})
         self.box_width = to_integer(self.box_width)
-        self.coords = to_xy_coords(self.coords)
+        self.anchor = to_xy_coords(self.anchor)
+        self.grid4 = to_xy_coords(self.grid4)
+        self.nudge = to_xy_coords(self.nudge)
 
 class Style(BaseData):
     field_name = "style"

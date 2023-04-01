@@ -1,8 +1,27 @@
+import os
 from typing import List
 from PIL import Image, ImageFont, ImageFilter
 
 from kksubs.data import Subtitle
 from kksubs.service.processors import create_text_layer
+
+def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
+    image_width, image_height = image.size
+    if grid4 is not None:
+        grid4_x, grid4_y = grid4
+        tb_anchor_x = int(image_width//4*grid4_x)
+        tb_anchor_y = int(image_height//4*grid4_y)
+        
+        if nudge is not None: # if there is anchor point data, use it to fine-tune.
+            x_nudge, y_nudge = nudge
+            tb_anchor_x = tb_anchor_x + x_nudge
+            tb_anchor_y = tb_anchor_y - y_nudge
+    else:
+        tb_anchor_x, tb_anchor_y = anchor
+        tb_anchor_x = image_width/2 + tb_anchor_x
+        tb_anchor_y = image_height/2 - tb_anchor_y
+
+    return tb_anchor_x, tb_anchor_y
 
 def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
 
@@ -17,7 +36,13 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     image_width, image_height = image.size
 
     # extract text data
-    font_style = "arial.ttf" if text_data.font == "default" else text_data.font
+    if text_data.font == "default":
+        font_style = "arial.ttf"
+    elif os.path.exists(text_data.font):
+        font_style = text_data.font
+    else:
+        raise FileNotFoundError(text_data.font)
+    
     font_color = text_data.color
     font_size = text_data.size
     font_stroke_size = text_data.stroke_size
@@ -25,11 +50,16 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     align_h = box_data.align_h
     align_v = box_data.align_v
     box_width = box_data.box_width
-    coords = box_data.coords
+
+    anchor = box_data.anchor
+    grid4 = box_data.grid4
+    nudge = box_data.nudge
+
+    tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=nudge)
 
     font = ImageFont.truetype(font_style, font_size)
     
-    text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, coords)
+    text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
     
     outline_data = style.outline_data
 
@@ -37,7 +67,7 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
         outline_color = outline_data.color
         outline_size = outline_data.size
         outline_blur = outline_data.blur
-        outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, coords)
+        outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
         outline_base = outline_layer
         if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
             outline_base = image.copy()
