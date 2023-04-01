@@ -72,7 +72,9 @@ class Project:
 
     pass
 
-    def add_subtitles(self, drafts:Dict[str, List[int]]=None):
+    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None):
+        if prefix is None:
+            prefix = ""
 
         if drafts is None:
             draft_ids = self.get_draft_ids()
@@ -138,7 +140,7 @@ class Project:
                 else:
                     subtitled_image = image
 
-                save_path = os.path.join(draft_output_dir, image_id)
+                save_path = os.path.join(draft_output_dir, prefix+image_id)
                 subtitled_image.save(save_path)
                 logger.info(f"Added subtitles to image {i+1}/{num_of_images}.")
 
@@ -147,7 +149,7 @@ class Project:
         return 0
     
     # Delete folders in output directory.
-    def clear_subtitles(self, drafts:Dict[str, List[int]]=None, in_terminal=False):
+    def clear_subtitles(self, drafts:Dict[str, List[int]]=None, force=False):
         # remove outputs corresponding to a draft.
         # if drafts is None, remove all folders in the output directory.
 
@@ -158,10 +160,10 @@ class Project:
                 return 0
 
             # print(folders)
-            if in_terminal:
+            if not force:
                 print(f"Clear these output folders and contents? {folders}")
 
-            confirmation = input("Enter y to confirm: ") if in_terminal else "y"
+            confirmation = "y" if force else input("Enter y to confirm: ")
             if confirmation == "y":
                 for folder in folders:
                     shutil.rmtree(os.path.join(self.outputs_dir, folder))

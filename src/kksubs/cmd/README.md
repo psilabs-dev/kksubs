@@ -8,7 +8,7 @@ From the project root directory, add subtitles from `draft.txt` using the `kksub
 ```
 >>> kksubs-compose -d draft.txt
 ```
-Add a `-p` flag to specify project path.
+Specify project path using the `--project` or `-p` flag.
 ```
 >>> kksubs-compose -p path/to/project -d draft.txt
 ```
@@ -16,7 +16,11 @@ Run the following to apply subtitles from all drafts.
 ```
 >>> kksubs-compose
 ```
-Clear subtitled images in the output directory.
+Add a `--prefix` to add a prefix.
+```
+>>> kksubs-compose --prefix "subbed-"
+```
+Clear/remove all subtitled images in the output directory using the `--clear` or `-c` flag.
 ```
 >>> kksubs-compose --clear
 ```
@@ -44,7 +48,7 @@ will rename the images to
 - 2.png
 - 3.png
 ```
-and populate the `draft.txt` draft:
+and populate the `draft.txt` draft with empty subtitles:
 ```
 image_id: 1.png
 
