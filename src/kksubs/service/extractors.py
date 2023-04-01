@@ -78,6 +78,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
     content:List[str]
     for i, line in enumerate(lines):
         # identify the start of a subtitle.
+
         has_content_key = get_has_content_key(line)
         has_style_key = get_has_attr_key(line)
         # has_next_line = i+1 <= len(lines)-1
@@ -183,6 +184,9 @@ def extract_subtitles(draft_body:str, styles:Dict[str, Style]) -> Dict[str, List
 
     subtitles = dict()
     content_keys = {"content"}.union(styles.keys())
+
+    # remove comments
+    draft_body = "\n".join(list(filter(lambda line:not line.startswith("#"), draft_body.split("\n"))))
 
     # split lines for draft
     image_blocks = draft_body.split("image_id:")
