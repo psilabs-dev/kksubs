@@ -20,6 +20,11 @@ Add a `--prefix` to add a prefix.
 ```
 >>> kksubs-compose --prefix "subbed-"
 ```
+Use `--start` and `--cap` to control the range of images to subtitle. For example, to subtitle the first 20 images after the image at index 15 (note: indices start at 0):
+```
+>>> kksubs-compose -d draft.txt --cap 20 --start 15
+```
+
 Clear/remove all subtitled images in the output directory using the `--clear` or `-c` flag.
 ```
 >>> kksubs-compose --clear
