@@ -38,6 +38,10 @@ class Project:
 
     def rename_images(self, padding_length=None, start_at=None, prefix=None, suffix=None):
         # Perform image renaming so it is structured and in alphabetical order.
+        if prefix is None:
+            prefix = ""
+        if suffix is None:
+            suffix = ""
 
         image_paths = self.get_image_paths()
         image_paths.sort()
