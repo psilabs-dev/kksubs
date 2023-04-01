@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 import unittest
 from kksubs.data import BoxData, Style, Subtitle, TextData
 
@@ -6,7 +6,7 @@ from kksubs.service.extractors import extract_subtitles, is_valid_nested_attribu
 
 class TestExtractSubtitles(unittest.TestCase):
 
-    def assert_contents_equal(self, subtitles:List[Subtitle], solution:List[Subtitle]):
+    def assert_contents_equal(self, subtitles:Dict[str, List[Subtitle]], solution:Dict[str, List[Subtitle]]):
         for key in solution:
             self.assertListEqual(list(map(lambda subtitle: subtitle.content, subtitles[key])), list(map(lambda subtitle: subtitle.content, solution[key])))
 
