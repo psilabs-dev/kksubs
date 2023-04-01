@@ -182,7 +182,7 @@ The "factory" style is applied in the absence of any styling from the user side,
 | - | - | - | - |
 | `text_data.font` | font | "default"<br/>path to a TTF font |
 | `text_data.size` | font size | positive int | 
-| `text_data.color` | font fill color | color<br/>[int, int, int] |
+| `text_data.color` | font fill color | color<br/>[int, int, int] | Uses RGB triple, e.g. "red" is [255, 0, 0] |
 | `text_data.stroke_size` | font outline size | positive int<br/>0 |
 | `text_data.stroke_color` | font outline color | color<br/>[int, int, int] |
 | - | - | - |
