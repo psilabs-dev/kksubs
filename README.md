@@ -185,6 +185,10 @@ The "factory" style is applied in the absence of any styling from the user side,
 | `text_data.stroke_size` | font outline size | positive int<br/>0 |
 | `text_data.stroke_color` | font outline color | color<br/>[int, int, int] |
 | - | - | - |
+| `outline_data.color` | text outline color | color<br/>[int, int, int]
+| `outline_data.size` | text outline size | positive int<br/>0
+| `outline_data.blur` | text outline blur | positive int<br/>0
+| - | - | - |
 | `box_data.align_h` | horizontal alignment | "left"<br/>"right"<br/>"center" |
 | `box_data.align_v` | vertical alignment | "bottom"<br/>"top"<br/>"center" |
 | `box_data.box_width` | text width | positive int |
