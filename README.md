@@ -25,7 +25,7 @@ Open a Python virtual environment and install the Git repository. For example:
 >>> pip install git+https://github.com/pain-text-format/kksubs.git
 ```
 
-For an example project, see a "hello-world" project [here].
+You can find an example project [here](https://github.com/pain-text-format/kksubs-sample-project).
 
 ## Running a `kksubs` Project
 A typical `kksubs` project structure looks like this:

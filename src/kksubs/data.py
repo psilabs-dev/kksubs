@@ -99,7 +99,7 @@ class TextData(BaseData):
     def get_default(cls):
         return TextData(
             font="default", 
-            size=20, color=(0, 0, 0),
+            size=60, color="white",
             stroke_size=0, stroke_color=(0, 0, 0),
         )
 
