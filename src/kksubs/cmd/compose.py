@@ -1,9 +1,13 @@
 import argparse
-
+import logging
 from typing import List
 
 from kksubs import add_subtitles, clear_subtitles
 
+logging_levels = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+}
 
 def compose():
     
@@ -15,6 +19,7 @@ def compose():
     parser.add_argument("-d", "--draft", default=None)
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--cap", type=int, default=200)
+    parser.add_argument("--log", default=None)
 
     parser.add_argument("-c", "--clear", action="store_true")
     parser.add_argument("-cf", action="store_true") # clear directories without confirmation.
@@ -27,6 +32,14 @@ def compose():
     cap = args.cap
     clear = args.clear
     force_clear = args.cf
+    logging_level = args.log
+
+    # change logging on the command level.
+    if logging_level is not None:
+        if logging_level in logging_levels:
+            logging.basicConfig(level=logging_levels.get(logging_level))
+        else:
+            raise KeyError(f"Invalid logging option: {logging_level}")
 
     if draft is not None:
         draft = {draft:list(range(start, start+cap))}
