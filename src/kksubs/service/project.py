@@ -4,6 +4,8 @@ import shutil
 from PIL import Image
 from typing import Dict, List
 import yaml
+import multiprocessing
+
 from kksubs.data import Style, Subtitle
 
 from kksubs.service.extractors import extract_styles, extract_subtitles
@@ -11,6 +13,29 @@ from kksubs.service.renamer import rename_images, update_images_in_textpath
 from kksubs.service.subtitle import add_subtitles_to_image
 
 logger = logging.getLogger(__name__)
+
+def add_subtitle_process(
+        i, 
+        image_path, 
+        subtitles_by_image_id, 
+        draft_output_dir, 
+        prefix, 
+        num_of_images
+):
+    image_id = os.path.basename(image_path)
+    image = Image.open(image_path)
+    # print(image_id)
+
+    if image_id in subtitles_by_image_id.keys():
+        subtitles = subtitles_by_image_id[image_id]
+        subtitled_image = add_subtitles_to_image(image, subtitles)
+    else:
+        subtitled_image = image
+
+    save_path = os.path.join(draft_output_dir, prefix+image_id)
+    subtitled_image.save(save_path)
+    logger.info(f"Added subtitles to image {i+1}/{num_of_images}.")
+    # print(f"Added subtitles to image {i+1}/{num_of_images}.")
 
 # project preparation layer.
 # folder/file logic, obtain read data, deserialization
@@ -77,7 +102,7 @@ class Project:
 
     pass
 
-    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None):
+    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True):
         if prefix is None:
             prefix = ""
 
@@ -134,20 +159,14 @@ class Project:
             logger.debug(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
 
             num_of_images = len(filtered_image_paths)
-            # subtitle the images
-            for i, image_path in enumerate(filtered_image_paths):
-                image_id = os.path.basename(image_path)
-                image = Image.open(image_path)
 
-                if image_id in subtitles_by_image_id.keys():
-                    subtitles = subtitles_by_image_id[image_id]
-                    subtitled_image = add_subtitles_to_image(image, subtitles)
-                else:
-                    subtitled_image = image
-
-                save_path = os.path.join(draft_output_dir, prefix+image_id)
-                subtitled_image.save(save_path)
-                logger.info(f"Added subtitles to image {i+1}/{num_of_images}.")
+            # subtitle images.
+            if allow_multiprocessing:
+                pool = multiprocessing.Pool()
+                pool.starmap(add_subtitle_process, [(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images) for i, image_path in enumerate(image_paths)])
+            else:
+                for i, image_path in enumerate(filtered_image_paths):
+                    add_subtitle_process(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images)
 
             logger.info(f"Finished adding subtitles to {num_of_images} images for draft {draft}")
 

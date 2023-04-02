@@ -23,6 +23,7 @@ def compose():
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--cap", type=int, default=200)
     parser.add_argument("--log", default=None)
+    parser.add_argument("--disable-multiprocessing", action="store_true")
 
     parser.add_argument("-c", "--clear", action="store_true")
     parser.add_argument("-cf", action="store_true") # clear directories without confirmation.
@@ -36,6 +37,7 @@ def compose():
     clear = args.clear
     force_clear = args.cf
     logging_level = args.log
+    allow_multiprocessing = not args.disable_multiprocessing
 
     # change logging on the command level.
     if logging_level is not None:
@@ -52,7 +54,7 @@ def compose():
     else:
 
         try:
-            add_subtitles(project_directory=project_directory, drafts=draft, prefix=prefix)
+            add_subtitles(project_directory=project_directory, drafts=draft, prefix=prefix, allow_multiprocessing=allow_multiprocessing)
             return 0
         except InvalidProjectException as exception:
             logger.error(f"Invalid kksubs project: {exception.project_directory}")
