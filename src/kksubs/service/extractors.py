@@ -153,7 +153,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
 def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
 
     styles = dict()
-    logger.info(f"Extracting styles from {styles_contents}.")
+    logger.debug(f"Extracting styles from {styles_contents}.")
     if not styles_contents:
         return styles
     

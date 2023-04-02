@@ -86,7 +86,7 @@ class Project:
 
         # get image paths.
         image_paths:List[str] = self.get_image_paths()
-        logger.info(f"Got images (basename): {list(map(os.path.basename, image_paths))}")
+        logger.debug(f"Got images (basename): {list(map(os.path.basename, image_paths))}")
 
         # extract subtitle styles (if any)
         if not os.path.exists(self.styles_path):
@@ -97,7 +97,7 @@ class Project:
                 styles_contents = yaml.safe_load(yaml_reader)
 
         styles:Dict[str, Style] = extract_styles(styles_contents)
-        logger.info(f"Obtained styles: {styles}")
+        logger.debug(f"Obtained styles: {styles}")
 
         for draft in drafts:
             # get draft by draft id
@@ -119,14 +119,14 @@ class Project:
 
             # extract styles and subtitles.
             subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
-            logger.info(f"Obtained subtitles: {subtitles_by_image_id}")
+            logger.debug(f"Obtained subtitles: {subtitles_by_image_id}")
 
             # apply subtitles to image with filter.
             if image_filters is None:
                 filtered_image_paths = image_paths
             else:
                 filtered_image_paths = list(map(lambda j:image_paths[j], filter(lambda i:i < len(image_paths), image_filters)))
-            logger.info(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
+            logger.debug(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
 
             num_of_images = len(filtered_image_paths)
             # subtitle the images
