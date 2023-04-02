@@ -5,6 +5,7 @@ from PIL import Image
 from typing import Dict, List
 import yaml
 import multiprocessing
+import time
 
 from kksubs.data import Style, Subtitle
 
@@ -161,14 +162,16 @@ class Project:
             num_of_images = len(filtered_image_paths)
 
             # subtitle images.
+            start_time = time.time()
             if allow_multiprocessing:
                 pool = multiprocessing.Pool()
                 pool.starmap(add_subtitle_process, [(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images) for i, image_path in enumerate(image_paths)])
             else:
                 for i, image_path in enumerate(filtered_image_paths):
                     add_subtitle_process(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images)
+            runtime = time.time() - start_time
 
-            logger.info(f"Finished adding subtitles to {num_of_images} images for draft {draft}")
+            logger.info(f"Finished subtitling {num_of_images} images for draft {draft} ({runtime}s)")
 
         return 0
     
