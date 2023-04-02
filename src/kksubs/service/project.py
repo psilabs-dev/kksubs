@@ -15,18 +15,23 @@ logger = logging.getLogger(__name__)
 # project preparation layer.
 # folder/file logic, obtain read data, deserialization
 
+class InvalidProjectException(FileNotFoundError):
+    "Project does not have a necessary directory to perform kksubs operations."
+    def __init__(self, project_directory):
+        self.project_directory = project_directory
+
 class Project:
     def __init__(self, project_directory:str=None):
         if project_directory is None:
             project_directory = "."
 
-        self.project_directory = project_directory
+        self.project_directory = os.path.realpath(project_directory)
         self.images_dir = os.path.realpath(os.path.join(project_directory, "images"))
         self.drafts_dir = os.path.realpath(os.path.join(project_directory, "drafts"))
         self.outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
         self.styles_path = os.path.realpath(os.path.join(self.project_directory, "styles.yml"))
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
-            raise FileNotFoundError
+            raise InvalidProjectException(self.project_directory)
         
     def get_draft_paths(self):
         return list(map(lambda draft_id: os.path.join(self.drafts_dir, draft_id), self.get_draft_ids()))
@@ -63,7 +68,7 @@ class Project:
             text_id = os.path.basename(text_path)
             extension = os.path.splitext(text_path)[1]
             if extension != ".txt":
-                logger.warning("File type not supported, skipping.")
+                logger.warning(f"File type for {text_id} not supported, skipping.")
                 # raise TypeError(f"File must be text file, not {extension}.")
                 continue
             

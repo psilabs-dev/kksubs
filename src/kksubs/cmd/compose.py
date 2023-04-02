@@ -3,6 +3,9 @@ import logging
 from typing import List
 
 from kksubs import add_subtitles, clear_subtitles
+from kksubs.service.project import InvalidProjectException
+
+logger = logging.getLogger(__name__)
 
 logging_levels = {
     "debug": logging.DEBUG,
@@ -47,5 +50,10 @@ def compose():
     if clear or force_clear:
         clear_subtitles(project_directory=project_directory, drafts=draft, force=force_clear)
     else:
-        add_subtitles(project_directory=project_directory, drafts=draft, prefix=prefix)
-        
+
+        try:
+            add_subtitles(project_directory=project_directory, drafts=draft, prefix=prefix)
+            return 0
+        except InvalidProjectException as exception:
+            logger.error(f"Invalid kksubs project: {exception.project_directory}")
+            return 1
