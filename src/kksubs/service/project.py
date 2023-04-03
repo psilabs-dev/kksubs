@@ -170,6 +170,11 @@ class Project:
             if not os.path.exists(draft_output_dir):
                 logger.info(f"Output directory for draft {draft_name} not found, making one.")
                 os.makedirs(draft_output_dir, exist_ok=True)
+            
+            # remove images in output that are not in input.
+            images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
+            for image_to_remove in images_to_remove_from_output:
+                os.remove(os.path.join(draft_output_dir, image_to_remove))
 
             # extract styles and subtitles.
             subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
