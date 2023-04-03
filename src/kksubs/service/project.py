@@ -186,9 +186,10 @@ class Project:
                 subtitles = subtitles_by_image_id.get(image_id)
                 for subtitle in subtitles:
                     try:
-                        subtitle.style.text_data.font = os.path.join(
-                            self.project_directory, subtitle.style.text_data.font
-                        )
+                        if subtitle.style.text_data.font != "default":
+                            subtitle.style.text_data.font = os.path.join(
+                                self.project_directory, subtitle.style.text_data.font
+                            )
                     except AttributeError: # font does not exist.
                         continue
 
