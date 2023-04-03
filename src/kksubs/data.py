@@ -298,5 +298,17 @@ class Subtitle:
         return str(self.__dict__)
     def __eq__(self, __value: object) -> bool:
         return self.__dict__ == __value.__dict__
-    
-    pass
+
+class SubtitleGroup:
+
+    def __init__(self, input_image_path:str=None, image_modified_time=None, output_image_path:str=None, subtitles:List[Subtitle]=None):
+        
+        self.input_image_path = input_image_path
+        self.image_modified_time = image_modified_time
+        self.output_image_path = output_image_path
+        self.subtitles = subtitles
+        
+    def __repr__(self) -> str:
+        return str(self.__dict__)
+    def __eq__(self, __value: object) -> bool:
+        return self.__dict__ == __value.__dict__
