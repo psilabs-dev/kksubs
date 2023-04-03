@@ -174,12 +174,23 @@ class Project:
             # extract styles and subtitles.
             subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
 
-            # validate image paths for each subtitle.
+            
             for image_id in list(subtitles_by_image_id):
+                # validate image paths for each subtitle.
                 image_path = os.path.join(self.images_dir, image_id)
                 if not os.path.exists(image_path):
                     logger.warning(f"Image ID {image_id} does not exist but is being referenced by subtitle. This subtitle will be ignored.")
                     del subtitles_by_image_id[image_id]
+                    continue
+                # validate subtitle font
+                subtitles = subtitles_by_image_id.get(image_id)
+                for subtitle in subtitles:
+                    try:
+                        subtitle.style.text_data.font = os.path.join(
+                            self.project_directory, subtitle.style.text_data.font
+                        )
+                    except AttributeError: # font does not exist.
+                        continue
 
             # apply subtitles to image with filter.
             if image_filters is None:
