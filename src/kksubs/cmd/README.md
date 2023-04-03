@@ -65,3 +65,18 @@ image_id: 2.png
 
 image_id: 3.png
 ```
+
+## Optimization: multiprocessing and incremental updating
+Multiprocessing is enabled by default to accelerate the subtitling process across multiple CPU cores. To disable multiprocessing, run
+```
+>>> kksubs-compose --disable-processing
+```
+Incremental updating is a feature which tells the program to only update subtitles that have been changed. Factors involved include changes in the draft, changes in `styles.yml`, or changes in the images directory. This forms a "snapshot" which is then compared with the next time you run `kksubs-compose`. This will accelerate subtitling, especially if you have hundreds of images and only changed a few lines.
+
+Incremental updating relies on the `pickle` library to serialize/deserialize objects, which can be insecure. Ensure that the `.kksubs` directory does not contain untrusted files.
+
+This is a personally developed feature and can be buggy, so it is not enabled by default. To enable incremental updating, use the `--incremental-update` flag.
+
+```
+>>> kksubs-compose --incremental-update
+```
