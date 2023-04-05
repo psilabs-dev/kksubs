@@ -2,6 +2,8 @@ from kksubs.service.project import Project
 from typing import Dict, List
 import logging
 
+from kksubs.service.watcher import ProjectWatcher
+
 logger = logging.getLogger(__name__)
 
 def rename_images(project_directory:str=None):
@@ -12,7 +14,21 @@ def add_subtitles(
         project_directory:str=None, drafts:Dict[str, List[int]]=None, prefix:str=None, 
         allow_multiprocessing:bool=None,
         allow_incremental_updating:bool=None,
+        watch:bool=None,
 ):
+    
+    if watch is None:
+        watch = False
+
+    if watch:
+        watcher = ProjectWatcher(Project(project_directory=project_directory))
+        watcher.watch(
+            drafts=drafts, prefix=prefix, 
+            allow_multiprocessing=allow_multiprocessing, 
+            allow_incremental_updating=allow_incremental_updating
+        )
+        return 0
+
     logger.info("Adding subtitles.")
     return Project(project_directory=project_directory).add_subtitles(
         drafts=drafts, prefix=prefix, 

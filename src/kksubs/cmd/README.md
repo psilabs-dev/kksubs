@@ -80,3 +80,11 @@ This is a personally developed feature and can be buggy, so it is not enabled by
 ```
 >>> kksubs-compose --incremental-update
 ```
+
+## Run kksubs as a continuous process
+You can run `kksubs` as a continuous process, so you may focus working on editing subtitles and viewing results. This is done with the `--watch` flag.
+```
+>>> kksubs-compose --watch
+```
+This sets up a project watcher, which keeps "watch" of the drafts and images directory, and also the `styles.yml` file if there exists one. When a change is detected in these watch targets, the watcher will trigger a request to subtitle the images. This process occurs once per second.
+

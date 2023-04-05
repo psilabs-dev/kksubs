@@ -25,6 +25,7 @@ def compose():
     parser.add_argument("--log", default=None)
     parser.add_argument("--disable-multiprocessing", action="store_true")
     parser.add_argument("--incremental-update", action="store_true")
+    parser.add_argument("--watch", action="store_true")
 
     parser.add_argument("-c", "--clear", action="store_true")
     parser.add_argument("-cf", action="store_true") # clear directories without confirmation.
@@ -40,6 +41,7 @@ def compose():
     logging_level = args.log
     allow_multiprocessing = not args.disable_multiprocessing
     incremental_update = args.incremental_update
+    watch = args.watch
 
     # change logging on the command level.
     if logging_level is not None:
@@ -53,15 +55,16 @@ def compose():
 
     if clear or force_clear:
         clear_subtitles(project_directory=project_directory, drafts=draft, force=force_clear)
-    else:
+        return 0
 
-        try:
-            add_subtitles(
-                project_directory=project_directory, drafts=draft, prefix=prefix, 
-                allow_multiprocessing=allow_multiprocessing,
-                allow_incremental_updating=incremental_update
-            )
-            return 0
-        except InvalidProjectException as exception:
-            logger.error(f"Invalid kksubs project: {exception.project_directory}")
-            return 1
+    try:
+        add_subtitles(
+            project_directory=project_directory, drafts=draft, prefix=prefix, 
+            allow_multiprocessing=allow_multiprocessing,
+            allow_incremental_updating=incremental_update,
+            watch=watch
+        )
+        return 0
+    except InvalidProjectException as exception:
+        logger.error(f"Invalid kksubs project: {exception.project_directory}")
+        return 1
