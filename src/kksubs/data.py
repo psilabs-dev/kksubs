@@ -244,10 +244,10 @@ class Brightness(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, layer_dict=None):
-        if layer_dict is None:
+    def from_dict(cls, values=None):
+        if values is None:
             return None
-        return Brightness(**layer_dict)
+        return Brightness(**values)
     
     def coalesce(self, other:"Brightness"):
         if other is None:
@@ -256,6 +256,38 @@ class Brightness(BaseData):
 
     def correct_values(self):
         self.value = to_float(self.value)
+
+    pass
+
+class Gaussian(BaseData):
+    field_name = "gaussian"
+
+    def __init__(
+            self,
+            value=None, # radius
+    ):
+        self.value = value
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Gaussian(
+            value=0
+        )
+    
+    @classmethod
+    def from_dict(cls, values=None):
+        if values is None:
+            return None
+        return Gaussian(**values)
+    
+    def coalesce(self, other:"Gaussian"):
+        if other is None:
+            return
+        self.value = coalesce(self.value, other.value)
+
+    def correct_values(self):
+        self.value = to_integer(self.value)
 
     pass
 
@@ -269,12 +301,14 @@ class Style(BaseData):
             outline_data:OutlineData=None,
             box_data:BoxData=None,
             brightness:Brightness=None,
+            gaussian:Gaussian=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
         self.outline_data = outline_data
         self.box_data = box_data
         self.brightness = brightness
+        self.gaussian = gaussian
         pass
 
     @classmethod
@@ -295,7 +329,8 @@ class Style(BaseData):
             text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
             outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
             box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
-            brightness=Brightness.from_dict(layer_dict=style_dict.get(Brightness.field_name)),
+            brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
+            gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
         )
     
     def coalesce(self, other:"Style"):
@@ -318,6 +353,10 @@ class Style(BaseData):
             self.brightness = other.brightness
         else:
             self.brightness.coalesce(other.brightness)
+        if self.gaussian is None:
+            self.gaussian = other.gaussian
+        else:
+            self.gaussian.coalesce(other.gaussian)
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -328,6 +367,9 @@ class Style(BaseData):
         if self.brightness is not None:
             self.brightness.coalesce(Brightness.get_default())
             self.brightness.correct_values()
+        if self.gaussian is not None:
+            self.gaussian.coalesce(Gaussian.get_default())
+            self.gaussian.correct_values()
 
     pass
 
