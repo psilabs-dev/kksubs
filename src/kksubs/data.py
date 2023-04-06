@@ -225,6 +225,38 @@ class BoxData(BaseData):
         self.grid4 = to_xy_coords(self.grid4)
         self.nudge = to_xy_coords(self.nudge)
 
+class LayerData(BaseData):
+    field_name = "layer_data"
+
+    def __init__(
+            self,
+            brightness=None,
+    ):
+        self.brightness = brightness
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return LayerData(
+            brightness=1.0
+        )
+    
+    @classmethod
+    def from_dict(cls, layer_dict=None):
+        if layer_dict is None:
+            return None
+        return LayerData(**layer_dict)
+    
+    def coalesce(self, other:"LayerData"):
+        if other is None:
+            return
+        self.brightness = coalesce(self.brightness, other.brightness)
+
+    def correct_values(self):
+        self.brightness = to_float(self.brightness)
+
+    pass
+
 class Style(BaseData):
     field_name = "style"
 
@@ -234,11 +266,13 @@ class Style(BaseData):
             text_data:TextData=None,
             outline_data:OutlineData=None,
             box_data:BoxData=None,
+            layer_data:LayerData=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
         self.outline_data = outline_data
         self.box_data = box_data
+        self.layer_data = layer_data
         pass
 
     @classmethod
@@ -258,7 +292,8 @@ class Style(BaseData):
             style_id=style_dict.get("style_id"),
             text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
             outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
-            box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name))
+            box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
+            layer_data=LayerData.from_dict(layer_dict=style_dict.get(LayerData.field_name)),
         )
     
     def coalesce(self, other:"Style"):
@@ -277,6 +312,10 @@ class Style(BaseData):
             self.box_data = other.box_data
         else:
             self.box_data.coalesce(other.box_data)
+        if self.layer_data is None:
+            self.layer_data = other.layer_data
+        else:
+            self.layer_data.coalesce(other.layer_data)
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -284,6 +323,9 @@ class Style(BaseData):
             self.outline_data.coalesce(OutlineData.get_default())
             self.outline_data.correct_values()
         self.box_data.correct_values()
+        if self.layer_data is not None:
+            self.layer_data.coalesce(LayerData.get_default())
+            self.layer_data.correct_values()
 
     pass
 
