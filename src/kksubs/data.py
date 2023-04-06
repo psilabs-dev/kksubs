@@ -291,6 +291,37 @@ class Gaussian(BaseData):
 
     pass
 
+class Background(BaseData):
+    field_name = "background"
+
+    def __init__(
+            self,
+            path=None, # radius
+    ):
+        self.path = path
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Background(
+        )
+    
+    @classmethod
+    def from_dict(cls, path=None):
+        if path is None:
+            return None
+        return Background(**path)
+    
+    def coalesce(self, other:"Background"):
+        if other is None:
+            return
+        self.path = coalesce(self.path, other.path)
+
+    def correct_values(self):
+        return
+
+    pass
+
 class Style(BaseData):
     field_name = "style"
 
@@ -302,6 +333,7 @@ class Style(BaseData):
             box_data:BoxData=None,
             brightness:Brightness=None,
             gaussian:Gaussian=None,
+            background:Background=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
@@ -309,6 +341,7 @@ class Style(BaseData):
         self.box_data = box_data
         self.brightness = brightness
         self.gaussian = gaussian
+        self.background = background
         pass
 
     @classmethod
@@ -331,6 +364,7 @@ class Style(BaseData):
             box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
             brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
             gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
+            background=Background.from_dict(path=style_dict.get(Background.field_name)),
         )
     
     def coalesce(self, other:"Style"):
@@ -357,6 +391,10 @@ class Style(BaseData):
             self.gaussian = other.gaussian
         else:
             self.gaussian.coalesce(other.gaussian)
+        if self.background is None:
+            self.background = other.background
+        else:
+            self.background.coalesce(other.background)
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -370,6 +408,9 @@ class Style(BaseData):
         if self.gaussian is not None:
             self.gaussian.coalesce(Gaussian.get_default())
             self.gaussian.correct_values()
+        if self.background is not None:
+            self.background.coalesce(Background.get_default())
+            self.background.correct_values()
 
     pass
 

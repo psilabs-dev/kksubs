@@ -5,6 +5,10 @@ from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 from kksubs.data import Subtitle
 from kksubs.service.processors import create_text_layer
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
     image_width, image_height = image.size
     if grid4 is not None:
@@ -22,7 +26,7 @@ def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
 
     return tb_anchor_x, tb_anchor_y
 
-def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
+def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_directory:str) -> Image.Image:
 
     # expand subtitle.
     style = subtitle.style
@@ -60,6 +64,7 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
     
+    # effect processing layer
     brightness = style.brightness
     if brightness is not None:
         brightness = brightness.value
@@ -72,6 +77,17 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
         radius = gaussian.value
         if radius is not None:
             image = image.filter(ImageFilter.GaussianBlur(radius=radius))
+
+    background = style.background
+    if background is not None:
+        bg_path = background.path
+        if bg_path is not None:
+            if not os.path.exists(bg_path):
+                bg_path = os.path.join(project_directory, bg_path)
+            if not os.path.exists(bg_path):
+                raise FileNotFoundError(f"Image file {bg_path} cannot be found.")
+            bg_image = Image.open(bg_path)
+            image.paste(bg_image, (0, 0), bg_image)
 
     outline_data = style.outline_data
 
@@ -95,7 +111,7 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     return image
 
-def add_subtitles_to_image(image:Image.Image, subtitles:List[Subtitle]) -> Image.Image:
+def add_subtitles_to_image(image:Image.Image, subtitles:List[Subtitle], project_directory:str) -> Image.Image:
     for subtitle in subtitles:
-        image = add_subtitle_to_image(image, subtitle)
+        image = add_subtitle_to_image(image, subtitle, project_directory)
     return image
