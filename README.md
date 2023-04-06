@@ -196,3 +196,11 @@ The "factory" style is applied in the absence of any styling from the user side,
 | `box_data.grid4` | 4ths grid coordinates | [int, int] | An alternative coordinate system that overrides `box_data.anchor`. Partitions the image into horizontal and vertical fourths, and places the textbox anchor point on one of these points. <br/><br/>[2, 2] = center<br/>[0, 0] = top left<br/>[4, 0] = top right<br/>[0, 4] = bottom left<br/>[4, 4] = bottom right |
 | `box_data.nudge` | displacement from anchor point | [int, int] | Nudges the textbox from the anchor point.
 
+## Effects
+In addition to styling the text itself, the `Style` object contains other fields related to adding effects to an image.
+
+| style field ID | name | values | description |
+|-|-|-|-|
+| `brightness.value` | adjust brightness | positive float | Adjust the brightness of an image. Decrease to lower brightness.<br/>Default is 1 (original brightness).
+| `gaussian.value` | apply gaussian blur | positive int<br/>0 | Apply gaussian blur to an image.<br/>Default is 0 (no blur)
+| `background.path` | add background | path | Add an image immediately below the content layer of a subtitled image. Image can be a valid path from the project directory or an absolute path. 
