@@ -291,6 +291,43 @@ class Gaussian(BaseData):
 
     pass
 
+class Motion(BaseData):
+    field_name = "motion"
+
+    def __init__(
+            self,
+            value=None, # kernel size
+            angle=None, # value between 0 and 360
+    ):
+        self.value = value
+        self.angle = angle
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Motion(
+            value=0,
+            angle=0,
+        )
+    
+    @classmethod
+    def from_dict(cls, values=None):
+        if values is None:
+            return None
+        return Motion(**values)
+    
+    def coalesce(self, other:"Motion"):
+        if other is None:
+            return
+        self.value = coalesce(self.value, other.value)
+        self.angle = coalesce(self.angle, other.angle)
+
+    def correct_values(self):
+        self.value = to_integer(self.value)
+        self.angle = to_integer(self.angle)
+
+    pass
+
 class Mask(BaseData):
     field_name = "mask"
 
@@ -364,6 +401,7 @@ class Style(BaseData):
             box_data:BoxData=None,
             brightness:Brightness=None,
             gaussian:Gaussian=None,
+            motion:Motion=None,
             background:Background=None,
             mask:Mask=None,
     ):
@@ -373,6 +411,7 @@ class Style(BaseData):
         self.box_data = box_data
         self.brightness = brightness
         self.gaussian = gaussian
+        self.motion = motion
         self.background = background
         self.mask = mask
         pass
@@ -397,6 +436,7 @@ class Style(BaseData):
             box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
             brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
             gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
+            motion=Motion.from_dict(values=style_dict.get(Motion.field_name)),
             background=Background.from_dict(path=style_dict.get(Background.field_name)),
             mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
         )
@@ -425,6 +465,10 @@ class Style(BaseData):
             self.gaussian = other.gaussian
         else:
             self.gaussian.coalesce(other.gaussian)
+        if self.motion is None:
+            self.motion = other.motion
+        else:
+            self.motion.coalesce(other.motion)
         if self.background is None:
             self.background = other.background
         else:
@@ -446,6 +490,9 @@ class Style(BaseData):
         if self.gaussian is not None:
             self.gaussian.coalesce(Gaussian.get_default())
             self.gaussian.correct_values()
+        if self.motion is not None:
+            self.motion.coalesce(Motion.get_default())
+            self.motion.correct_values()
         if self.background is not None:
             self.background.coalesce(Background.get_default())
             self.background.correct_values()

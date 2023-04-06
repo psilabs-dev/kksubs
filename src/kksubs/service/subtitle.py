@@ -3,7 +3,8 @@ from typing import List
 from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 
 from kksubs.data import Subtitle
-from kksubs.service.processors import create_text_layer
+from kksubs.service.processor.motion_blur import apply_motion_blur
+from kksubs.service.processor.apply_text import create_text_layer
 
 import logging
 
@@ -97,6 +98,16 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
                 image.paste(image.filter(ImageFilter.GaussianBlur(radius=radius)), (0, 0), mask_image)
             else:
                 image = image.filter(ImageFilter.GaussianBlur(radius=radius))
+
+    motion = style.motion
+    if motion is not None:
+        kernel_size = motion.value
+        angle = motion.angle
+        if kernel_size is not None and angle is not None:
+            if has_mask:
+                image.paste(apply_motion_blur(image, kernel_size, angle), (0, 0), mask_image)
+            else:
+                image = apply_motion_blur(image, kernel_size, angle)
 
     background = style.background
     if background is not None:
