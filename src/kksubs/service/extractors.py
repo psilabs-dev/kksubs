@@ -2,13 +2,13 @@ import logging
 import re
 from typing import Dict, List, Set
 
-from kksubs.data import BaseData, BoxData, LayerData, OutlineData, Style, Subtitle, TextData
+from kksubs.data import BaseData, BoxData, Brightness, OutlineData, Style, Subtitle, TextData
 
 # parsing/extraction, filtering, standardization
 logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
-    base_data.field_name:base_data for base_data in [TextData, OutlineData, BoxData, LayerData, Style]
+    base_data.field_name:base_data for base_data in [TextData, OutlineData, BoxData, Brightness, Style]
 }
 
 def get_inherited_style_ids(input_style_id) -> List[str]:

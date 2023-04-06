@@ -60,9 +60,9 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
     
-    layer_data = style.layer_data
+    layer_data = style.brightness
     if layer_data is not None:
-        brightness = layer_data.brightness
+        brightness = layer_data.value
         if brightness is not None:
             brightness_enhancer = ImageEnhance.Brightness(image)
             image = brightness_enhancer.enhance(brightness)
