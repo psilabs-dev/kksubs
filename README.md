@@ -19,10 +19,10 @@
 A Windows OS is required and Python 3.7+ is recommended.
 
 Open a Python virtual environment and install the Git repository. For example:
-```
->>> virtualenv venv
->>> .\venv\Scripts\activate
->>> pip install git+https://github.com/pain-text-format/kksubs.git
+```console
+$ virtualenv venv
+$ .\venv\Scripts\activate
+$ pip install git+https://github.com/pain-text-format/kksubs.git
 ```
 
 You can find an example project [here](https://github.com/pain-text-format/kksubs-sample-project).
@@ -51,13 +51,13 @@ A typical `kksubs` project structure looks like this:
 Each text file in the `drafts/` directory is called a "draft". A draft contains subtitling information you want to apply to images in `images/`, and the subtitled image outputs go to the `output/` directory.
 
 To apply subtitles from a draft (e.g. `draft1.txt`) to all the images (from the project directory, for example), run the following script:
-```
+```python
 from kksubs import add_subtitles
 add_subtitles('.', 'draft1.txt')
 ```
 You can also run this from the command line.
-```
->>> kksubs-compose -d draft1.txt
+```console
+$ kksubs-compose -d draft1.txt
 ```
 See [commands](/src/kksubs/cmd/README.md) for more information.
 
@@ -121,7 +121,7 @@ For more information on what styles can be customized, see [style fields](#style
 ## The `styles.yml` file
 
 To get a more automated process of styling subtitles, you use a `styles.yml` file. The `styles.yml` file stores a list of commonly used styles, which are applied to subtitles by referring to their ID as a header. For example, one can store a custom style as follows:
-```
+```yaml
 # styles.yml
 
 - style_id: c12
@@ -139,7 +139,7 @@ c12: This is some text
 
 ### Style Inheritance
 Properties of styles can be inherited using the syntax, and their properties can be overridden.
-```
+```yaml
 - style_id: parent
   text_data:
     size: 30
@@ -151,7 +151,7 @@ Properties of styles can be inherited using the syntax, and their properties can
 In this block, the `child` style assigns the same font color to a subtitle as its parent, but assigns a font size of 40 instead of 30.
 
 Multiple and nested inheritance is allowed.
-```
+```yaml
 - style_id: parent1
 - style_id: parent2
 - style_id: child1(parent1, parent2)
