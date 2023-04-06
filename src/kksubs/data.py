@@ -291,12 +291,43 @@ class Gaussian(BaseData):
 
     pass
 
+class Mask(BaseData):
+    field_name = "mask"
+
+    def __init__(
+            self,
+            path=None,
+    ):
+        self.path = path
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Mask(
+        )
+    
+    @classmethod
+    def from_dict(cls, path=None):
+        if path is None:
+            return None
+        return Mask(**path)
+    
+    def coalesce(self, other:"Mask"):
+        if other is None:
+            return
+        self.path = coalesce(self.path, other.path)
+
+    def correct_values(self):
+        return
+
+    pass
+
 class Background(BaseData):
     field_name = "background"
 
     def __init__(
             self,
-            path=None, # radius
+            path=None,
     ):
         self.path = path
         pass
@@ -334,6 +365,7 @@ class Style(BaseData):
             brightness:Brightness=None,
             gaussian:Gaussian=None,
             background:Background=None,
+            mask:Mask=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
@@ -342,6 +374,7 @@ class Style(BaseData):
         self.brightness = brightness
         self.gaussian = gaussian
         self.background = background
+        self.mask = mask
         pass
 
     @classmethod
@@ -365,6 +398,7 @@ class Style(BaseData):
             brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
             gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
             background=Background.from_dict(path=style_dict.get(Background.field_name)),
+            mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
         )
     
     def coalesce(self, other:"Style"):
@@ -395,6 +429,10 @@ class Style(BaseData):
             self.background = other.background
         else:
             self.background.coalesce(other.background)
+        if self.mask is None:
+            self.mask = other.mask
+        else:
+            self.mask.coalesce(other.mask)
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -411,6 +449,9 @@ class Style(BaseData):
         if self.background is not None:
             self.background.coalesce(Background.get_default())
             self.background.correct_values()
+        if self.mask is not None:
+            self.mask.coalesce(Mask.get_default())
+            self.mask.correct_values()
 
     pass
 
