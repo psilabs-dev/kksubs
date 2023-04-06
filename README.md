@@ -203,4 +203,5 @@ In addition to styling the text itself, the `Style` object contains other fields
 |-|-|-|-|
 | `brightness.value` | adjust brightness | positive float | Adjust the brightness of an image. Decrease to lower brightness.<br/>Default is 1 (original brightness).
 | `gaussian.value` | apply gaussian blur | positive int<br/>0 | Apply gaussian blur to an image.<br/>Default is 0 (no blur)
-| `background.path` | add background | path | Add an image immediately below the content layer of a subtitled image. Image can be a valid path from the project directory or an absolute path. 
+| `mask.path` | add mask | path | Import an image as a mask for the above effects.
+| `background.path` | add background | path | Add an image immediately below the content layer of a subtitled image. Image can be a valid path from the project directory or an absolute path. (not affected by mask)
