@@ -1,6 +1,6 @@
 import os
 from typing import List
-from PIL import Image, ImageFont, ImageFilter
+from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 
 from kksubs.data import Subtitle
 from kksubs.service.processors import create_text_layer
@@ -60,6 +60,13 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
     
+    layer_data = style.layer_data
+    if layer_data is not None:
+        brightness = layer_data.brightness
+        if brightness is not None:
+            brightness_enhancer = ImageEnhance.Brightness(image)
+            image = brightness_enhancer.enhance(brightness)
+
     outline_data = style.outline_data
 
     if outline_data is not None:
