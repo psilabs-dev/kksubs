@@ -3,6 +3,7 @@ import os
 import time
 from typing import Dict, List
 import traceback
+import datetime
 
 from kksubs.service.project import Project
 
@@ -61,7 +62,8 @@ class ProjectWatcher:
                             allow_incremental_updating=allow_incremental_updating
                         )
                     else:
-                        logger.info("Scan complete: no changes detected.")
+                        now = datetime.datetime.now().time().strftime('%H:%M:%S')
+                        logger.info(f"{now} Scan complete: no changes detected.")
                 except KeyboardInterrupt:
                     raise KeyboardInterrupt
                 except Exception:
