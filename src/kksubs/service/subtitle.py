@@ -31,6 +31,8 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     # expand subtitle.
     style = subtitle.style
     content = subtitle.content
+    if not content:
+        content = [""]
     # expand details of subtitle profile.
     text_data = style.text_data
     box_data = style.box_data
