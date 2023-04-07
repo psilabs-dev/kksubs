@@ -59,6 +59,8 @@ class BaseData(ABC):
     def __repr__(self) -> str:
         return str(self.__dict__)
     def __eq__(self, __value: object) -> bool:
+        if __value is None:
+            return False
         return self.__dict__ == __value.__dict__
     
     @abstractclassmethod
@@ -225,6 +227,169 @@ class BoxData(BaseData):
         self.grid4 = to_xy_coords(self.grid4)
         self.nudge = to_xy_coords(self.nudge)
 
+class Brightness(BaseData):
+    field_name = "brightness"
+
+    def __init__(
+            self,
+            value=None,
+    ):
+        self.value = value
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Brightness(
+            value=1.0
+        )
+    
+    @classmethod
+    def from_dict(cls, values=None):
+        if values is None:
+            return None
+        return Brightness(**values)
+    
+    def coalesce(self, other:"Brightness"):
+        if other is None:
+            return
+        self.value = coalesce(self.value, other.value)
+
+    def correct_values(self):
+        self.value = to_float(self.value)
+
+    pass
+
+class Gaussian(BaseData):
+    field_name = "gaussian"
+
+    def __init__(
+            self,
+            value=None, # radius
+    ):
+        self.value = value
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Gaussian(
+            value=0
+        )
+    
+    @classmethod
+    def from_dict(cls, values=None):
+        if values is None:
+            return None
+        return Gaussian(**values)
+    
+    def coalesce(self, other:"Gaussian"):
+        if other is None:
+            return
+        self.value = coalesce(self.value, other.value)
+
+    def correct_values(self):
+        self.value = to_integer(self.value)
+
+    pass
+
+class Motion(BaseData):
+    field_name = "motion"
+
+    def __init__(
+            self,
+            value=None, # kernel size
+            angle=None, # value between 0 and 360
+    ):
+        self.value = value
+        self.angle = angle
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Motion(
+            value=0,
+            angle=0,
+        )
+    
+    @classmethod
+    def from_dict(cls, values=None):
+        if values is None:
+            return None
+        return Motion(**values)
+    
+    def coalesce(self, other:"Motion"):
+        if other is None:
+            return
+        self.value = coalesce(self.value, other.value)
+        self.angle = coalesce(self.angle, other.angle)
+
+    def correct_values(self):
+        self.value = to_integer(self.value)
+        self.angle = to_integer(self.angle)
+
+    pass
+
+class Mask(BaseData):
+    field_name = "mask"
+
+    def __init__(
+            self,
+            path=None,
+    ):
+        self.path = path
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Mask(
+        )
+    
+    @classmethod
+    def from_dict(cls, path=None):
+        if path is None:
+            return None
+        return Mask(**path)
+    
+    def coalesce(self, other:"Mask"):
+        if other is None:
+            return
+        self.path = coalesce(self.path, other.path)
+
+    def correct_values(self):
+        return
+
+    pass
+
+class Background(BaseData):
+    field_name = "background"
+
+    def __init__(
+            self,
+            path=None,
+    ):
+        self.path = path
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return Background(
+        )
+    
+    @classmethod
+    def from_dict(cls, path=None):
+        if path is None:
+            return None
+        return Background(**path)
+    
+    def coalesce(self, other:"Background"):
+        if other is None:
+            return
+        self.path = coalesce(self.path, other.path)
+
+    def correct_values(self):
+        return
+
+    pass
+
 class Style(BaseData):
     field_name = "style"
 
@@ -234,11 +399,21 @@ class Style(BaseData):
             text_data:TextData=None,
             outline_data:OutlineData=None,
             box_data:BoxData=None,
+            brightness:Brightness=None,
+            gaussian:Gaussian=None,
+            motion:Motion=None,
+            background:Background=None,
+            mask:Mask=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
         self.outline_data = outline_data
         self.box_data = box_data
+        self.brightness = brightness
+        self.gaussian = gaussian
+        self.motion = motion
+        self.background = background
+        self.mask = mask
         pass
 
     @classmethod
@@ -258,7 +433,12 @@ class Style(BaseData):
             style_id=style_dict.get("style_id"),
             text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
             outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
-            box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name))
+            box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
+            brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
+            gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
+            motion=Motion.from_dict(values=style_dict.get(Motion.field_name)),
+            background=Background.from_dict(path=style_dict.get(Background.field_name)),
+            mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
         )
     
     def coalesce(self, other:"Style"):
@@ -277,6 +457,26 @@ class Style(BaseData):
             self.box_data = other.box_data
         else:
             self.box_data.coalesce(other.box_data)
+        if self.brightness is None:
+            self.brightness = other.brightness
+        else:
+            self.brightness.coalesce(other.brightness)
+        if self.gaussian is None:
+            self.gaussian = other.gaussian
+        else:
+            self.gaussian.coalesce(other.gaussian)
+        if self.motion is None:
+            self.motion = other.motion
+        else:
+            self.motion.coalesce(other.motion)
+        if self.background is None:
+            self.background = other.background
+        else:
+            self.background.coalesce(other.background)
+        if self.mask is None:
+            self.mask = other.mask
+        else:
+            self.mask.coalesce(other.mask)
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -284,6 +484,21 @@ class Style(BaseData):
             self.outline_data.coalesce(OutlineData.get_default())
             self.outline_data.correct_values()
         self.box_data.correct_values()
+        if self.brightness is not None:
+            self.brightness.coalesce(Brightness.get_default())
+            self.brightness.correct_values()
+        if self.gaussian is not None:
+            self.gaussian.coalesce(Gaussian.get_default())
+            self.gaussian.correct_values()
+        if self.motion is not None:
+            self.motion.coalesce(Motion.get_default())
+            self.motion.correct_values()
+        if self.background is not None:
+            self.background.coalesce(Background.get_default())
+            self.background.correct_values()
+        if self.mask is not None:
+            self.mask.coalesce(Mask.get_default())
+            self.mask.correct_values()
 
     pass
 

@@ -1,9 +1,14 @@
 import os
 from typing import List
-from PIL import Image, ImageFont, ImageFilter
+from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 
 from kksubs.data import Subtitle
-from kksubs.service.processors import create_text_layer
+from kksubs.service.processor.motion_blur import apply_motion_blur
+from kksubs.service.processor.apply_text import create_text_layer
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
     image_width, image_height = image.size
@@ -22,11 +27,13 @@ def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
 
     return tb_anchor_x, tb_anchor_y
 
-def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
+def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_directory:str) -> Image.Image:
 
     # expand subtitle.
     style = subtitle.style
     content = subtitle.content
+    if not content:
+        content = [""]
     # expand details of subtitle profile.
     text_data = style.text_data
     box_data = style.box_data
@@ -60,6 +67,59 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
     
+    # effect processing layer
+    mask = style.mask
+    has_mask = False
+    if mask is not None:
+        mask_path = mask.path
+        if mask_path is not None:
+            if not os.path.exists(mask_path):
+                mask_path = os.path.join(project_directory, mask_path)
+            if not os.path.exists(mask_path):
+                raise FileNotFoundError(f"Mask file {mask_path} cannot be found.")
+            mask_image = Image.open(mask_path)
+            has_mask = True
+
+    brightness = style.brightness
+    if brightness is not None:
+        brightness = brightness.value
+        if brightness is not None:
+            brightness_enhancer = ImageEnhance.Brightness(image)
+            if has_mask:
+                image.paste(brightness_enhancer.enhance(brightness), (0, 0), mask_image)
+            else:
+                image = brightness_enhancer.enhance(brightness)
+    
+    gaussian = style.gaussian
+    if gaussian is not None:
+        radius = gaussian.value
+        if radius is not None:
+            if has_mask:
+                image.paste(image.filter(ImageFilter.GaussianBlur(radius=radius)), (0, 0), mask_image)
+            else:
+                image = image.filter(ImageFilter.GaussianBlur(radius=radius))
+
+    motion = style.motion
+    if motion is not None:
+        kernel_size = motion.value
+        angle = motion.angle
+        if kernel_size is not None and angle is not None:
+            if has_mask:
+                image.paste(apply_motion_blur(image, kernel_size, angle), (0, 0), mask_image)
+            else:
+                image = apply_motion_blur(image, kernel_size, angle)
+
+    background = style.background
+    if background is not None:
+        bg_path = background.path
+        if bg_path is not None:
+            if not os.path.exists(bg_path):
+                bg_path = os.path.join(project_directory, bg_path)
+            if not os.path.exists(bg_path):
+                raise FileNotFoundError(f"Image file {bg_path} cannot be found.")
+            bg_image = Image.open(bg_path)
+            image.paste(bg_image, (0, 0), bg_image)
+
     outline_data = style.outline_data
 
     if outline_data is not None:
@@ -82,7 +142,7 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle) -> Image.Image:
     
     return image
 
-def add_subtitles_to_image(image:Image.Image, subtitles:List[Subtitle]) -> Image.Image:
+def add_subtitles_to_image(image:Image.Image, subtitles:List[Subtitle], project_directory:str) -> Image.Image:
     for subtitle in subtitles:
-        image = add_subtitle_to_image(image, subtitle)
+        image = add_subtitle_to_image(image, subtitle, project_directory)
     return image

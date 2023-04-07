@@ -2,6 +2,8 @@ import logging
 import os
 import time
 from typing import Dict, List
+import traceback
+import datetime
 
 from kksubs.service.project import Project
 
@@ -49,17 +51,23 @@ class ProjectWatcher:
             logger.info("Watching project for changes.")
             while True:
                 logger.debug("Scanning files.")
-                file_change_detected = self.detect_project_changes()
+                try:
+                    file_change_detected = self.detect_project_changes()
 
-                if file_change_detected:
-                    logger.info("Project change detected, updating subtitles.")
-                    self.project.add_subtitles(
-                        drafts=drafts, prefix=prefix, 
-                        allow_multiprocessing=allow_multiprocessing, 
-                        allow_incremental_updating=allow_incremental_updating
-                    )
-                else:
-                    logger.info("Scan complete: no changes detected.")
+                    if file_change_detected:
+                        logger.info("Project change detected, updating subtitles.")
+                        self.project.add_subtitles(
+                            drafts=drafts, prefix=prefix, 
+                            allow_multiprocessing=allow_multiprocessing, 
+                            allow_incremental_updating=allow_incremental_updating
+                        )
+                    else:
+                        now = datetime.datetime.now().time().strftime('%H:%M:%S')
+                        logger.info(f"{now} Scan complete: no changes detected.")
+                except KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                except Exception:
+                    logger.error(f"An error occurred during scan cycle; retrying... Exception: {traceback.format_exc()}")
 
                 time.sleep(1)
 
