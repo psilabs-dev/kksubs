@@ -1,5 +1,7 @@
 # Koikatsu Automated Subtitles
 
+![Tests](https://github.com/pain-text-format/kksubs/actions/workflows/tests.yml/badge.svg)
+
 > Automate simple subtitle processing for Koikatsu stories.
 
 ## Topics:
