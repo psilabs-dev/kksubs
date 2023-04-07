@@ -7,7 +7,6 @@ import yaml
 import multiprocessing
 import time
 
-import json
 import pickle
 
 from kksubs.data import Style, Subtitle, SubtitleGroup

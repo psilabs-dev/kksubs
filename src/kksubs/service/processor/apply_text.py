@@ -1,5 +1,5 @@
 from typing import List
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 import textwrap
 
 def _get_text_dimensions(text_string:str, font:ImageFont.FreeTypeFont, default_text_width=None, default_text_height=None):

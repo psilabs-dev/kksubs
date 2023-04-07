@@ -1,6 +1,5 @@
 import argparse
 import logging
-from typing import List
 
 from kksubs import add_subtitles, clear_subtitles, create_project
 from kksubs.service.project import InvalidProjectException
