@@ -79,9 +79,9 @@ def create_text_layer(
             x = tb_anchor_x - text_width/2 - text_width/2
         else:
             raise ValueError(f"Invalid alignment value {align_h}.")
-        if align_v == "up":
+        if align_v == "top":
             y = tb_anchor_y - default_text_height*(num_lines-i)
-        elif align_v == "down":
+        elif align_v == "bottom":
             y = tb_anchor_y - default_text_height*(num_lines-i) + sum_text_height
         elif align_v == "center":
             y = tb_anchor_y - default_text_height*(num_lines-i) + sum_text_height//2
