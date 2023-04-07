@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 def add_subtitle_process(
         i, 
         image_path, 
+        project_directory,
         subtitles_by_image_id, 
         draft_output_dir, 
         prefix, 
@@ -32,7 +33,7 @@ def add_subtitle_process(
 
     if image_id in subtitles_by_image_id.keys():
         subtitles = subtitles_by_image_id[image_id]
-        subtitled_image = add_subtitles_to_image(image, subtitles)
+        subtitled_image = add_subtitles_to_image(image, subtitles, project_directory)
     else:
         subtitled_image = image
 
@@ -187,13 +188,16 @@ class Project:
                     logger.warning(f"Image ID {image_id} does not exist but is being referenced by subtitle. This subtitle will be ignored.")
                     del subtitles_by_image_id[image_id]
                     continue
+
+                # TODO: project directory burden switched to subtitles, delete this.
                 # validate subtitle font
                 subtitles = subtitles_by_image_id.get(image_id)
                 for subtitle in subtitles:
                     try:
-                        if subtitle.style.text_data.font != "default":
+                        font = subtitle.style.text_data.font
+                        if font != "default" and not os.path.exists(font):
                             subtitle.style.text_data.font = os.path.join(
-                                self.project_directory, subtitle.style.text_data.font
+                                self.project_directory, font
                             )
                     except AttributeError: # font does not exist.
                         continue
@@ -291,10 +295,10 @@ class Project:
             start_time = time.time()
             if allow_multiprocessing:
                 pool = multiprocessing.Pool()
-                pool.starmap(add_subtitle_process, [(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images) for i, image_path in enumerate(filtered_image_paths)])
+                pool.starmap(add_subtitle_process, [(i, image_path, self.project_directory, subtitles_by_image_id, draft_output_dir, prefix, num_of_images) for i, image_path in enumerate(filtered_image_paths)])
             else:
                 for i, image_path in enumerate(filtered_image_paths):
-                    add_subtitle_process(i, image_path, subtitles_by_image_id, draft_output_dir, prefix, num_of_images)
+                    add_subtitle_process(i, image_path, self.project_directory, subtitles_by_image_id, draft_output_dir, prefix, num_of_images)
             runtime = time.time() - start_time
 
             logger.info(f"Finished subtitling {num_of_images} images for draft {draft} ({runtime}s)")
