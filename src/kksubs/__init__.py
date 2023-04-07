@@ -1,3 +1,4 @@
+import os
 from kksubs.service.project import Project
 from typing import Dict, List
 import logging
@@ -5,6 +6,14 @@ import logging
 from kksubs.service.watcher import ProjectWatcher
 
 logger = logging.getLogger(__name__)
+
+def create_project(project_directory:str=None):
+    print(f"Create a project here? {os.path.realpath(project_directory)}")
+    confirmation = input("Enter Y to confirm: ")
+    if confirmation!="Y":
+        print("Operation cancelled.")
+        return 1
+    return Project(project_directory=project_directory, create=True)
 
 def rename_images(project_directory:str=None):
     logger.info("Renaming images.")

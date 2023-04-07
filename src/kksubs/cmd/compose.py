@@ -2,7 +2,7 @@ import argparse
 import logging
 from typing import List
 
-from kksubs import add_subtitles, clear_subtitles
+from kksubs import add_subtitles, clear_subtitles, create_project
 from kksubs.service.project import InvalidProjectException
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,7 @@ def compose():
     parser.add_argument("--disable-multiprocessing", action="store_true")
     parser.add_argument("--incremental-update", action="store_true")
     parser.add_argument("--watch", action="store_true")
+    parser.add_argument("--new-project", action="store_true")
 
     parser.add_argument("-c", "--clear", action="store_true")
     parser.add_argument("-cf", action="store_true") # clear directories without confirmation.
@@ -42,6 +43,7 @@ def compose():
     allow_multiprocessing = not args.disable_multiprocessing
     incremental_update = args.incremental_update
     watch = args.watch
+    new_project = args.new_project
 
     # change logging on the command level.
     if logging_level is not None:
@@ -49,6 +51,11 @@ def compose():
             logging.basicConfig(level=logging_levels.get(logging_level))
         else:
             raise KeyError(f"Invalid logging option: {logging_level}")
+
+    if new_project:
+        # create a new project then return 0.
+        create_project(project_directory)
+        return 0
 
     if draft is not None:
         draft = {draft:list(range(start, start+cap))}

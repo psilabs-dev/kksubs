@@ -1,6 +1,16 @@
 # commands
 > Documentation for some terminal commands in `kksubs`.
 
+## Create a project
+Create a `kksubs` project in an empty directory. This will turn the directory into a project, adding the `images`, `drafts` and `output` directory, and add an empty draft in the `drafts` directory.
+```console
+$ kksubs-compose --new-project
+```
+Specify a location using the `-p` flag.
+```console
+$ kksubs-compose -p path/to/project --new-project
+```
+
 ## Add and remove subtitles
 
 From the project root directory, add subtitles from `draft.txt` using the `kksubs-compose` command.

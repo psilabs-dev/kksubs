@@ -51,9 +51,11 @@ class InvalidProjectException(FileNotFoundError):
         self.project_directory = project_directory
 
 class Project:
-    def __init__(self, project_directory:str=None):
+    def __init__(self, project_directory:str=None, create=None):
         if project_directory is None:
             project_directory = "."
+        if create is None:
+            create = False
 
         self.project_directory = os.path.realpath(project_directory)
         self.metadata_directory = os.path.join(self.project_directory, ".kksubs")
@@ -62,6 +64,47 @@ class Project:
         self.drafts_dir = os.path.realpath(os.path.join(project_directory, "drafts"))
         self.outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
         self.styles_path = os.path.realpath(os.path.join(self.project_directory, "styles.yml"))
+
+        if create:            
+            if not os.path.exists(self.project_directory):
+                raise FileNotFoundError
+            changes_made = False
+
+            if not os.path.exists(self.images_dir):
+                os.makedirs(self.images_dir)
+                changes_made = True
+                logger.info("Created new images directory.")
+            else:
+                logger.info("Image directory already exists.")
+            if not os.path.exists(self.drafts_dir):
+                os.makedirs(self.drafts_dir)
+                changes_made = True
+                logger.info("Created new drafts directory.")
+                with open(os.path.join(self.drafts_dir, "draft.txt"), "w") as writer:
+                    writer.write("")
+                logger.info("Created an empty draft.")
+            else:
+                logger.info("Drafts directory already exists.")
+            if not os.path.exists(self.outputs_dir):
+                os.makedirs(self.outputs_dir)
+                changes_made = True
+                logger.info("Created new outputs directory.")
+            else:
+                logger.info("Outputs directory already exists.")
+            if not os.path.exists(self.styles_path):
+                # create a template styles file.
+                with open(self.styles_path, "w") as writer:
+                    writer.write("")
+                changes_made = True
+                logger.info("Created a styles file.")
+            else:
+                logger.info("Styles file already exists.")
+            
+            if changes_made:
+                logger.info("Successfully created a project directory.")
+            else:
+                logger.info("No changes were made to the project.")
+
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
             raise InvalidProjectException(self.project_directory)
         
