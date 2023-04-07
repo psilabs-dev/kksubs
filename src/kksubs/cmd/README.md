@@ -10,10 +10,11 @@ Specify a location using the `-p` flag.
 ```console
 $ kksubs-compose -p path/to/project --new-project
 ```
+If an `images` directory has been populated, the program will correspondingly create a populated draft.
 
 ## Add and remove subtitles
 
-From the project root directory, add subtitles from `draft.txt` using the `kksubs-compose` command.
+Add subtitles from `draft.txt` using the `kksubs-compose` command.
 
 ```console
 $ kksubs-compose -d draft.txt

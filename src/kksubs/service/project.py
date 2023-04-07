@@ -83,6 +83,7 @@ class Project:
                 with open(os.path.join(self.drafts_dir, "draft.txt"), "w") as writer:
                     writer.write("")
                 logger.info("Created an empty draft.")
+                self.rename_images()
             else:
                 logger.info("Drafts directory already exists.")
             if not os.path.exists(self.outputs_dir):
@@ -92,7 +93,7 @@ class Project:
             else:
                 logger.info("Outputs directory already exists.")
             if not os.path.exists(self.styles_path):
-                # create a template styles file.
+                # create a template styles file. TODO: create template online and make download request.
                 with open(self.styles_path, "w") as writer:
                     writer.write("")
                 changes_made = True
