@@ -59,7 +59,8 @@ class ProjectWatcher:
                         self.project.add_subtitles(
                             drafts=drafts, prefix=prefix, 
                             allow_multiprocessing=allow_multiprocessing, 
-                            allow_incremental_updating=allow_incremental_updating
+                            allow_incremental_updating=allow_incremental_updating,
+                            update_drafts=True,
                         )
                     else:
                         now = datetime.datetime.now().time().strftime('%H:%M:%S')

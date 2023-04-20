@@ -104,5 +104,7 @@ def update_images_in_textpath(text_path:str, image_paths:List[str], new_image_pa
     with open(text_path, "r", encoding="utf-8") as reader:
         content = reader.read()
     updated_textstring = update_images_in_textstring(content, image_paths, new_image_paths=new_image_paths)
+    if content == updated_textstring: # no need to update.
+        return
     with open(text_path, "w", encoding="utf-8") as writer:
         writer.write(updated_textstring)

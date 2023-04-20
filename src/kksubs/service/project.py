@@ -156,7 +156,7 @@ class Project:
 
     pass
 
-    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=False):
+    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=False, update_drafts=False):
         if allow_multiprocessing is None:
             allow_multiprocessing = True
         if allow_incremental_updating is None:
@@ -200,6 +200,9 @@ class Project:
         for draft in drafts:
             # get draft by draft id
             draft_path = os.path.join(self.drafts_dir, draft)
+            if update_drafts:
+                update_images_in_textpath(draft_path, image_paths, new_image_paths=image_paths)
+
             image_filters = drafts.get(draft)
 
             if not os.path.exists(draft_path):
