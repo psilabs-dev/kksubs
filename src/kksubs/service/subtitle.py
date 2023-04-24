@@ -59,11 +59,15 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     align_h = box_data.align_h
     align_v = box_data.align_v
     box_width = box_data.box_width
+    rotate = box_data.rotate
+    if rotate is None:
+        rotate = 0
 
     anchor = box_data.anchor
     grid4 = box_data.grid4
-    nudge = box_data.nudge
+    nudge = box_data.nudge # nudge will not determine center of rotation.
 
+    tb_center_x, tb_center_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=None) # center of rotation.
     tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=nudge)
 
     # apply sub styles
@@ -74,8 +78,8 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
 
     font = ImageFont.truetype(font_style, font_size)
     
-    text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
-    
+    text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
+
     # effect processing layer
     mask = style.mask
     has_mask = False
@@ -136,7 +140,7 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
             outline_size = outline_data.size
             outline_blur = outline_data.blur
             outline_alpha = outline_data.alpha
-            outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
+            outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
             outline_base = outline_layer
             if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
                 outline_base = image.copy()

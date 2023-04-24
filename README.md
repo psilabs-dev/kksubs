@@ -198,7 +198,8 @@ The "factory" style is applied in the absence of any styling from the user side,
 | `box_data.box_width` | text width | positive int |
 | `box_data.anchor` | textbox anchor point | [int, int] | Anchors the subtitle textbox to a point on the image. Default position is the center of the image and nonzero values displace the anchor point from the center.<br/><br/>The anchor's positional relation to the textbox depends on horizontal and vertical alignment. |
 | `box_data.grid4` | 4ths grid coordinates | [int, int] | An alternative coordinate system that overrides `box_data.anchor`. Partitions the image into horizontal and vertical fourths, and places the textbox anchor point on one of these points. <br/><br/>[2, 2] = center<br/>[0, 0] = top left<br/>[4, 0] = top right<br/>[0, 4] = bottom left<br/>[4, 4] = bottom right |
-| `box_data.nudge` | displacement from anchor point | [int, int] | Nudges the textbox from the anchor point.
+| `box_data.nudge` | displacement from anchor point | [int, int] | Nudges the textbox from the anchor point.|
+| `box_data.rotate` | rotate subtitle | int (degree) | |
 | `styles` | sub-styles under the style | List[Style] | Holds "child" style objects that share the anchor point of the parent style. Must be added from `styles.yml`. |
 
 ### Notes

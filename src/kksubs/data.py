@@ -205,6 +205,7 @@ class BoxData(BaseData):
             anchor=None,
             grid4=None,
             nudge=None,
+            rotate=None,
     ):
         self.align_h = align_h
         self.align_v = align_v
@@ -212,6 +213,7 @@ class BoxData(BaseData):
         self.anchor = anchor
         self.grid4 = grid4
         self.nudge = nudge
+        self.rotate = rotate
         pass
 
     @classmethod
@@ -240,6 +242,7 @@ class BoxData(BaseData):
             self.grid4 = other.grid4
 
         self.nudge = coalesce(self.nudge, other.nudge)
+        self.rotate = coalesce(self.rotate, other.rotate)
 
     def correct_values(self):
         self.align_h = to_validated_value(self.align_h, {"left", "right", "center"})
@@ -248,6 +251,7 @@ class BoxData(BaseData):
         self.anchor = to_xy_coords(self.anchor)
         self.grid4 = to_xy_coords(self.grid4)
         self.nudge = to_xy_coords(self.nudge)
+        self.rotate = to_integer(self.rotate)
 
 class Brightness(BaseData):
     field_name = "brightness"
