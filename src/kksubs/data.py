@@ -427,6 +427,7 @@ class Style(BaseData):
             motion:Motion=None,
             background:Background=None,
             mask:Mask=None,
+            styles:List["Style"]=None,
     ):
         self.style_id = style_id
         self.text_data = text_data
@@ -438,6 +439,7 @@ class Style(BaseData):
         self.motion = motion
         self.background = background
         self.mask = mask
+        self.styles = styles
         pass
 
     @classmethod
@@ -447,6 +449,7 @@ class Style(BaseData):
             text_data=TextData.get_default(),
             # stroke_data=StrokeData.get_default(),
             box_data=BoxData.get_default(),
+            # styles=[]
         )
 
     @classmethod
@@ -464,9 +467,10 @@ class Style(BaseData):
             motion=Motion.from_dict(values=style_dict.get(Motion.field_name)),
             background=Background.from_dict(path=style_dict.get(Background.field_name)),
             mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
+            styles=[Style.from_dict(style_dict=sub_style_dict) for sub_style_dict in style_dict.get("styles")] if "styles" in style_dict.keys() else [],
         )
     
-    def coalesce(self, other:"Style"):
+    def coalesce(self, other:"Style", essential=False):
         if other is None:
             return
         self.style_id = coalesce(self.style_id, other.style_id)
@@ -486,6 +490,9 @@ class Style(BaseData):
             self.box_data = other.box_data
         else:
             self.box_data.coalesce(other.box_data)
+        if essential:
+            return
+        
         if self.brightness is None:
             self.brightness = other.brightness
         else:
@@ -506,6 +513,8 @@ class Style(BaseData):
             self.mask = other.mask
         else:
             self.mask.coalesce(other.mask)
+        if not self.styles:
+            self.styles = other.styles
 
     def correct_values(self):
         self.text_data.correct_values()
@@ -531,6 +540,10 @@ class Style(BaseData):
         if self.mask is not None:
             self.mask.coalesce(Mask.get_default())
             self.mask.correct_values()
+        if self.styles is not None:
+            for style in self.styles:
+                style.correct_values()
+                style.coalesce(self, essential=True)
 
     pass
 

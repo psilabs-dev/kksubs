@@ -66,6 +66,12 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
 
     tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=nudge)
 
+    # apply sub styles
+    styles = style.styles
+    if styles is not None:
+        for sub_style in styles:
+            image = add_subtitle_to_image(image, Subtitle(content=[], style=sub_style), project_directory)
+
     font = ImageFont.truetype(font_style, font_size)
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)

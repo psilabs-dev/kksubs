@@ -1,6 +1,7 @@
 import logging
 import re
 from typing import Dict, List, Set
+from copy import deepcopy
 
 from kksubs.data import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, TextData
 
@@ -117,7 +118,8 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
                     if key == "content":
                         pass
                     else: # apply alias as style.
-                        style.coalesce(styles.get(key))
+                        # deep copy to enforce independence between subtitle objects, esp. for child styles.
+                        style.coalesce(deepcopy(styles.get(key)))
                 else:
                     line_content = ""
 
