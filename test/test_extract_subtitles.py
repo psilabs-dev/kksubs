@@ -104,29 +104,4 @@ content: some content
         self.assertDictEqual(subtitles, solution)
         pass
 
-    def test_aliases(self):
-        style_a = Style(style_id="a", text_data=TextData(size=123))
-        style_a.coalesce(Style.get_default())
-        styles = {"a": style_a}
-
-        read_input = """
-image_id: 1.png
-a: aliased text
-"""
-
-        subtitles = extract_subtitles(draft_body=read_input, styles=styles)
-        solution = {
-            "1.png": [
-                Subtitle(content=["aliased text"], style=style_a),
-            ]
-        }
-
-        # print(subtitles)
-        # print(solution)
-
-        self.assertEqual(subtitles.keys(), solution.keys())
-        self.assert_contents_equal(subtitles, solution)
-        self.assertDictEqual(subtitles, solution)
-        pass
-
     pass

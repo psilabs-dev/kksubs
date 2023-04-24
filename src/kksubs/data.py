@@ -467,7 +467,7 @@ class Style(BaseData):
             motion=Motion.from_dict(values=style_dict.get(Motion.field_name)),
             background=Background.from_dict(path=style_dict.get(Background.field_name)),
             mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
-            styles=[Style.from_dict(style_dict=sub_style_dict) for sub_style_dict in style_dict.get("styles")] if "styles" in style_dict.keys() else [],
+            styles=[Style.from_dict(style_dict=sub_style_dict) for sub_style_dict in style_dict.get("styles")] if "styles" in style_dict.keys() else None,
         )
     
     def coalesce(self, other:"Style", essential=False):
