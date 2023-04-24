@@ -2,7 +2,7 @@ import os
 from typing import List
 from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 
-from kksubs.data import Subtitle
+from kksubs.data import OutlineData, Subtitle
 from kksubs.service.processor.motion_blur import apply_motion_blur
 from kksubs.service.processor.apply_text import create_text_layer
 
@@ -125,10 +125,11 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
 
     # outline data application
     for outline_data in [style.outline_data_1, style.outline_data]:
-        if outline_data is not None:
+        if outline_data is not None and isinstance(outline_data, OutlineData):
             outline_color = outline_data.color
             outline_size = outline_data.size
             outline_blur = outline_data.blur
+            outline_alpha = outline_data.alpha
             outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
             outline_base = outline_layer
             if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
@@ -136,12 +137,18 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
                 outline_base.paste(outline_layer, (0, 0), outline_layer)
                 outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
                 outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
+                if outline_alpha is not None and outline_alpha < 1:
+                    outline_layer = ImageEnhance.Brightness(outline_layer.getchannel('A')).enhance(outline_alpha)
                 pass
             # outline_layer.show()
             image.paste(outline_base, (0, 0), outline_layer)
             pass
 
-    image.paste(text_layer, (0, 0), text_layer)
+    text_mask = text_layer
+    if text_data.alpha is not None and text_data.alpha < 1:
+        text_mask = ImageEnhance.Brightness(text_mask.getchannel('A')).enhance(text_data.alpha)
+
+    image.paste(text_layer, (0, 0), text_mask)
     
     return image
 

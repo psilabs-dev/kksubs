@@ -99,6 +99,7 @@ class TextData(BaseData):
             size=None, color=None, 
             stroke_size=None, stroke_color=None,
             text=None,
+            alpha=None,
     ):
         self.font = font
         self.size = size
@@ -106,6 +107,7 @@ class TextData(BaseData):
         self.stroke_size = stroke_size
         self.stroke_color = stroke_color
         self.text = text
+        self.alpha = alpha
         pass
 
     @classmethod
@@ -115,6 +117,7 @@ class TextData(BaseData):
             size=60, color="white",
             stroke_size=0, stroke_color=(0, 0, 0),
             text="",
+            alpha=1,
         )
 
     @classmethod
@@ -131,6 +134,7 @@ class TextData(BaseData):
         self.color = coalesce(self.color, other.color)
         self.stroke_size = coalesce(self.stroke_size, other.stroke_size)
         self.stroke_color = coalesce(self.stroke_color, other.stroke_color)
+        self.alpha = coalesce(self.alpha, other.alpha)
         self.text = coalesce(self.text, other.text)
 
     def correct_values(self):
@@ -141,6 +145,7 @@ class TextData(BaseData):
         self.color = to_rgb_color(self.color)
         self.stroke_size = to_integer(self.stroke_size)
         self.stroke_color = to_rgb_color(self.stroke_color)
+        self.alpha = to_float(self.alpha)
         self.text = to_string(self.text)
 
     pass
@@ -150,11 +155,12 @@ class OutlineData(BaseData):
 
     def __init__(
             self,
-            color=None, size=None, blur=None,
+            color=None, size=None, blur=None, alpha=None,
     ):
         self.color = color
         self.size = size
         self.blur = blur
+        self.alpha = alpha
         pass
 
     @classmethod
@@ -163,6 +169,7 @@ class OutlineData(BaseData):
             color="yellow",
             size=5,
             blur=0,
+            alpha=1,
         )
     
     @classmethod
@@ -177,11 +184,13 @@ class OutlineData(BaseData):
         self.color = coalesce(self.color, other.color)
         self.size = coalesce(self.size, other.size)
         self.blur = coalesce(self.blur, other.blur)
+        self.alpha = coalesce(self.alpha, other.alpha)
 
     def correct_values(self):
         self.color = to_rgb_color(self.color)
         self.size = to_integer(self.size)
         self.blur = to_integer(self.blur)
+        self.alpha = to_float(self.alpha)
 
 class OutlineData1(OutlineData):
     field_name = "outline_data_1"
