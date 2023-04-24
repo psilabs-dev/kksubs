@@ -53,6 +53,11 @@ def to_xy_coords(value) -> Optional[tuple]:
         return (int(value[0]), int(value[1]))
     raise TypeError(f"Coords has invalid type: {value} is of type {type(value)}.")
 
+def to_string(value) -> Optional[str]:
+    if value is None or isinstance(value, str):
+        return value
+    raise TypeError(type(value))
+
 class BaseData(ABC):
     field_name:str
 
@@ -92,13 +97,15 @@ class TextData(BaseData):
             self, 
             font=None, 
             size=None, color=None, 
-            stroke_size=None, stroke_color=None
+            stroke_size=None, stroke_color=None,
+            text=None,
     ):
         self.font = font
         self.size = size
         self.color = color
         self.stroke_size = stroke_size
         self.stroke_color = stroke_color
+        self.text = text
         pass
 
     @classmethod
@@ -107,6 +114,7 @@ class TextData(BaseData):
             font="default", 
             size=60, color="white",
             stroke_size=0, stroke_color=(0, 0, 0),
+            text="",
         )
 
     @classmethod
@@ -123,6 +131,7 @@ class TextData(BaseData):
         self.color = coalesce(self.color, other.color)
         self.stroke_size = coalesce(self.stroke_size, other.stroke_size)
         self.stroke_color = coalesce(self.stroke_color, other.stroke_color)
+        self.text = coalesce(self.text, other.text)
 
     def correct_values(self):
         if self.font is not None:
@@ -132,6 +141,7 @@ class TextData(BaseData):
         self.color = to_rgb_color(self.color)
         self.stroke_size = to_integer(self.stroke_size)
         self.stroke_color = to_rgb_color(self.stroke_color)
+        self.text = to_string(self.text)
 
     pass
 

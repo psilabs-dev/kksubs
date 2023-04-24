@@ -49,6 +49,9 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     else:
         raise FileNotFoundError(text_data.font)
     
+    # add default text data
+    content[0] = text_data.text+content[0]
+    
     font_color = text_data.color
     font_size = text_data.size
     font_stroke_size = text_data.stroke_size
