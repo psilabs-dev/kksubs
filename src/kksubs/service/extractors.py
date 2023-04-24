@@ -2,14 +2,14 @@ import logging
 import re
 from typing import Dict, List, Set
 
-from kksubs.data import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, Style, Subtitle, TextData
+from kksubs.data import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, TextData
 
 # parsing/extraction, filtering, standardization
 logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
     base_data.field_name:base_data for base_data in [
-        TextData, OutlineData, BoxData, 
+        TextData, OutlineData, OutlineData1, BoxData, 
         Brightness, Gaussian, Motion, Background, Mask,
         Style
     ]

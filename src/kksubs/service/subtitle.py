@@ -123,6 +123,24 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
             bg_image = Image.open(bg_path)
             image.paste(bg_image, (0, 0), bg_image)
 
+    outline_data_1 = style.outline_data_1
+
+    if outline_data_1 is not None:
+        outline_color = outline_data_1.color
+        outline_size = outline_data_1.size
+        outline_blur = outline_data_1.blur
+        outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y)
+        outline_base = outline_layer
+        if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
+            outline_base = image.copy()
+            outline_base.paste(outline_layer, (0, 0), outline_layer)
+            outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
+            outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
+            pass
+        # outline_layer.show()
+        image.paste(outline_base, (0, 0), outline_layer)
+        pass
+
     outline_data = style.outline_data
 
     if outline_data is not None:

@@ -183,6 +183,9 @@ class OutlineData(BaseData):
         self.size = to_integer(self.size)
         self.blur = to_integer(self.blur)
 
+class OutlineData1(OutlineData):
+    field_name = "outline_data_1"
+
 class BoxData(BaseData):
     field_name = "box_data"
 
@@ -408,6 +411,7 @@ class Style(BaseData):
             style_id:str=None, 
             text_data:TextData=None,
             outline_data:OutlineData=None,
+            outline_data_1:OutlineData1=None,
             box_data:BoxData=None,
             brightness:Brightness=None,
             gaussian:Gaussian=None,
@@ -418,6 +422,7 @@ class Style(BaseData):
         self.style_id = style_id
         self.text_data = text_data
         self.outline_data = outline_data
+        self.outline_data_1 = outline_data_1
         self.box_data = box_data
         self.brightness = brightness
         self.gaussian = gaussian
@@ -443,6 +448,7 @@ class Style(BaseData):
             style_id=style_dict.get("style_id"),
             text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
             outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
+            outline_data_1=OutlineData1.from_dict(outline_dict=style_dict.get(OutlineData1.field_name)),
             box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
             brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
             gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
@@ -463,6 +469,10 @@ class Style(BaseData):
             self.outline_data = other.outline_data
         else:
             self.outline_data.coalesce(other.outline_data)
+        if self.outline_data_1 is None:
+            self.outline_data_1 = other.outline_data_1
+        else:
+            self.outline_data_1.coalesce(other.outline_data_1)
         if self.box_data is None:
             self.box_data = other.box_data
         else:
@@ -493,6 +503,9 @@ class Style(BaseData):
         if self.outline_data is not None:
             self.outline_data.coalesce(OutlineData.get_default())
             self.outline_data.correct_values()
+        if self.outline_data_1 is not None:
+            self.outline_data_1.coalesce(OutlineData1.get_default())
+            self.outline_data_1.correct_values()
         self.box_data.correct_values()
         if self.brightness is not None:
             self.brightness.coalesce(Brightness.get_default())
