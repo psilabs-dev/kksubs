@@ -200,6 +200,10 @@ The "factory" style is applied in the absence of any styling from the user side,
 | `box_data.grid4` | 4ths grid coordinates | [int, int] | An alternative coordinate system that overrides `box_data.anchor`. Partitions the image into horizontal and vertical fourths, and places the textbox anchor point on one of these points. <br/><br/>[2, 2] = center<br/>[0, 0] = top left<br/>[4, 0] = top right<br/>[0, 4] = bottom left<br/>[4, 4] = bottom right |
 | `box_data.nudge` | displacement from anchor point | [int, int] | Nudges the textbox from the anchor point.
 
+### Notes
+
+* Outline data can be represented in either `outline_data` or `outline_data_1` (which is presented below `outline_data`).
+
 ## Effects
 In addition to styling the text itself, the `Style` object contains other fields related to adding effects to an image.
 
