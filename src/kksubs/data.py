@@ -204,6 +204,7 @@ class BoxData(BaseData):
             box_width=None, 
             anchor=None,
             grid4=None,
+            grid10=None,
             nudge=None,
             rotate=None,
     ):
@@ -212,6 +213,7 @@ class BoxData(BaseData):
         self.box_width = box_width
         self.anchor = anchor
         self.grid4 = grid4
+        self.grid10 = grid10
         self.nudge = nudge
         self.rotate = rotate
         pass
@@ -237,9 +239,10 @@ class BoxData(BaseData):
         self.align_v = coalesce(self.align_v, other.align_v)
         self.box_width = coalesce(self.box_width, other.box_width)
 
-        if self.anchor is None and self.grid4 is None:
+        if self.anchor is None and self.grid4 is None and self.grid10 is None:
             self.anchor = other.anchor
             self.grid4 = other.grid4
+            self.grid10 = other.grid10
 
         self.nudge = coalesce(self.nudge, other.nudge)
         self.rotate = coalesce(self.rotate, other.rotate)
@@ -250,6 +253,7 @@ class BoxData(BaseData):
         self.box_width = to_integer(self.box_width)
         self.anchor = to_xy_coords(self.anchor)
         self.grid4 = to_xy_coords(self.grid4)
+        self.grid10 = to_xy_coords(self.grid10)
         self.nudge = to_xy_coords(self.nudge)
         self.rotate = to_integer(self.rotate)
 

@@ -10,12 +10,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def get_pil_coordinates(image:Image.Image, anchor, grid4, nudge):
+def get_pil_coordinates(image:Image.Image, anchor, grid4, grid10, nudge):
     image_width, image_height = image.size
     if grid4 is not None:
         grid4_x, grid4_y = grid4
         tb_anchor_x = int(image_width//4*grid4_x)
         tb_anchor_y = int(image_height//4*grid4_y)
+    elif grid10 is not None:
+        grid10_x, grid10_y = grid10
+        tb_anchor_x = int(image_width//10*grid10_x)
+        tb_anchor_y = int(image_height//10*grid10_y)
     else:
         tb_anchor_x, tb_anchor_y = anchor
         tb_anchor_x = image_width/2 + tb_anchor_x
@@ -65,10 +69,11 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
 
     anchor = box_data.anchor
     grid4 = box_data.grid4
+    grid10 = box_data.grid10
     nudge = box_data.nudge # nudge will not determine center of rotation.
 
-    tb_center_x, tb_center_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=None) # center of rotation.
-    tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, nudge=nudge)
+    tb_center_x, tb_center_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=None) # center of rotation.
+    tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=nudge)
 
     # apply sub styles
     styles = style.styles
