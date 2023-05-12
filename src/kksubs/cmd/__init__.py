@@ -49,7 +49,6 @@ def kksubs_cmd():
     command = args.command
 
     project_directory = args.project
-    draft = args.draft
     log_level = args.log
 
     if isinstance(log_level, str) and log_level.lower() in log_levels:
@@ -68,6 +67,7 @@ def kksubs_cmd():
     if command in {'activate', 'compose'}:
         disable_multiprocessing = args.disable_multiprocessing
         incremental_update = args.incremental_update
+        draft = args.draft
 
         if draft is not None:
             draft = {draft:list(range(args.start, args.start+args.cap))}
