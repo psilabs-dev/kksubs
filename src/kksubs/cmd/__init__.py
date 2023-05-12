@@ -27,15 +27,19 @@ def kksubs_cmd():
     # rename images in project
     rename_parser = subparsers.add_parser('rename', help='Rename images in project.')
 
+    activate_parser = subparsers.add_parser('activate', help='Run subtitling program continuously.')
+
     # compose subtitles
     compose_parser = subparsers.add_parser('compose', help='Compose subtitles for images.')
-    compose_parser.add_argument('-d', '--draft', default=None)
-    compose_parser.add_argument('--disable-multiprocessing', action='store_true')
-    compose_parser.add_argument('--incremental-update', action='store_true')
-    compose_parser.add_argument('--activate', action='store_true', help='Run subtitles continuously.')
-    compose_parser.add_argument('--prefix', default='')
-    compose_parser.add_argument('--start', type=int, default=0)
-    compose_parser.add_argument('--cap', type=int, default=200)
+
+    # common arguments
+    for subparser in [activate_parser, compose_parser]:
+        subparser.add_argument('-d', '--draft', default=None)
+        subparser.add_argument('--disable-multiprocessing', action='store_true')
+        subparser.add_argument('--incremental-update', action='store_true')
+        subparser.add_argument('--prefix', default='')
+        subparser.add_argument('--start', type=int, default=0)
+        subparser.add_argument('--cap', type=int, default=200)
 
     # clear project outputs
     clear_parser = subparsers.add_parser('clear', help='Clear project outputs.')
@@ -49,7 +53,7 @@ def kksubs_cmd():
     log_level = args.log
 
     if isinstance(log_level, str) and log_level.lower() in log_levels:
-        if command == 'compose' and args.activate:
+        if command == 'activate':
             log_level = 'info'
         logging.basicConfig(level=log_levels[log_level.lower()])
     else:
@@ -61,16 +65,15 @@ def kksubs_cmd():
     if command == 'rename':
         rename_images(project_directory)
 
-    if command == 'compose':
+    if command in {'activate', 'compose'}:
         disable_multiprocessing = args.disable_multiprocessing
         incremental_update = args.incremental_update
-        activate = args.activate
 
         if draft is not None:
             draft = {draft:list(range(args.start, args.start+args.cap))}
 
         try:
-            if activate:
+            if command == 'activate':
                 add_subtitles(
                     project_directory=project_directory, drafts=draft, prefix=args.prefix, 
                     allow_multiprocessing=True,
