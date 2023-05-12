@@ -35,7 +35,7 @@ def kksubs_cmd():
     compose_parser.add_argument('--activate', action='store_true', help='Run subtitles continuously.')
     compose_parser.add_argument('--prefix', default='')
     compose_parser.add_argument('--start', type=int, default=0)
-    compose_parser.add_argument('--cap', type=int, default=20)
+    compose_parser.add_argument('--cap', type=int, default=200)
 
     # clear project outputs
     clear_parser = subparsers.add_parser('clear', help='Clear project outputs.')
