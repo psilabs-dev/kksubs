@@ -82,7 +82,9 @@ class Project:
                 with open(os.path.join(self.drafts_dir, "draft.txt"), "w") as writer:
                     writer.write("")
                 logger.info("Created an empty draft.")
-                self.rename_images()
+                # self.rename_images()
+                sorted_image_paths = sorted(self.get_image_paths())
+                self.update_drafts(sorted_image_paths, sorted_image_paths)
             else:
                 logger.info("Drafts directory already exists.")
             if not os.path.exists(self.outputs_dir):
@@ -121,6 +123,22 @@ class Project:
     def get_image_paths(self):
         return list(map(lambda image: os.path.join(self.images_dir, image), filter(lambda file: os.path.isfile(os.path.join(self.images_dir, file)) and os.path.splitext(file)[1] in {".png"} ,os.listdir(self.images_dir))))
 
+    def update_drafts(self, image_paths, new_image_paths):
+        # replaces old image paths with new image paths for all drafts.
+        # to get an empty draft with image paths, use same image paths for both arguments.
+
+        text_paths = self.get_draft_paths()
+        for text_path in text_paths:
+            text_id = os.path.basename(text_path)
+            extension = os.path.splitext(text_path)[1]
+            if extension != ".txt":
+                logger.warning(f"File type for {text_id} not supported, skipping.")
+                # raise TypeError(f"File must be text file, not {extension}.")
+                continue
+            
+            text_path = os.path.join(self.drafts_dir, text_id)
+            update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
+
     def rename_images(self, padding_length=None, start_at=None, prefix=None, suffix=None):
         # Perform image renaming so it is structured and in alphabetical order.
         if prefix is None:
@@ -130,7 +148,7 @@ class Project:
 
         image_paths = self.get_image_paths()
         image_paths.sort()
-        text_paths = self.get_draft_paths()
+        # text_paths = self.get_draft_paths()
 
         n = len(image_paths)
         input_image_directory = self.images_dir
@@ -143,16 +161,17 @@ class Project:
         new_image_paths = rename_images(image_paths, input_image_directory, padding_length=padding_length, start_at=start_at, prefix=prefix, suffix=suffix)
         logger.info(f"Renamed {n} images in directory {input_image_directory}.")
 
-        for text_path in text_paths:
-            text_id = os.path.basename(text_path)
-            extension = os.path.splitext(text_path)[1]
-            if extension != ".txt":
-                logger.warning(f"File type for {text_id} not supported, skipping.")
-                # raise TypeError(f"File must be text file, not {extension}.")
-                continue
+        self.update_drafts(image_paths, new_image_paths)
+        # for text_path in text_paths:
+        #     text_id = os.path.basename(text_path)
+        #     extension = os.path.splitext(text_path)[1]
+        #     if extension != ".txt":
+        #         logger.warning(f"File type for {text_id} not supported, skipping.")
+        #         # raise TypeError(f"File must be text file, not {extension}.")
+        #         continue
             
-            text_path = os.path.join(self.drafts_dir, text_id)
-            update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
+        #     text_path = os.path.join(self.drafts_dir, text_id)
+        #     update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
 
     pass
 
