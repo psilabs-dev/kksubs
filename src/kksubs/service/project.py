@@ -66,7 +66,9 @@ class Project:
 
         project_directory = os.path.realpath(project_directory)
         if metadata_directory is None:
-            metadata_directory = os.path.join(self.metadata_directory, "state")
+            metadata_directory = os.path.join(self.project_directory, ".kksubs")
+        if state_directory is None:
+            state_directory = os.path.join(self.metadata_directory, 'state')
         if images_dir is None:
             images_dir = os.path.realpath(os.path.join(project_directory, "images"))
         if drafts_dir is None:
