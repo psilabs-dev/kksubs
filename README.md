@@ -29,6 +29,8 @@ $ pip install git+https://github.com/pain-text-format/kksubs.git
 
 You can find an example project [here](https://github.com/pain-text-format/kksubs-sample-project).
 
+![processed-image](demo.png)
+
 ## Running a `kksubs` Project
 A typical `kksubs` project structure looks like this:
 ```
