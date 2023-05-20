@@ -66,9 +66,9 @@ class Project:
 
         project_directory = os.path.realpath(project_directory)
         if metadata_directory is None:
-            metadata_directory = os.path.join(self.project_directory, ".kksubs")
+            metadata_directory = os.path.join(project_directory, ".kksubs")
         if state_directory is None:
-            state_directory = os.path.join(self.metadata_directory, 'state')
+            state_directory = os.path.join(metadata_directory, 'state')
         if images_dir is None:
             images_dir = os.path.realpath(os.path.join(project_directory, "images"))
         if drafts_dir is None:
@@ -76,7 +76,7 @@ class Project:
         if outputs_dir is None:
             outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
         if styles_path is None:
-            styles_path = os.path.realpath(os.path.join(self.project_directory, "styles.yml"))
+            styles_path = os.path.realpath(os.path.join(project_directory, "styles.yml"))
 
         self.project_directory = project_directory
         self.metadata_directory = metadata_directory
