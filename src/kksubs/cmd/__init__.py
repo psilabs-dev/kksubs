@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from kksubs import add_subtitles, clear_subtitles, create_project, rename_images
+# from kksubs import add_subtitles, clear_subtitles, create_project, rename_images
 from kksubs.service.project import InvalidProjectException
 
 log_levels = {

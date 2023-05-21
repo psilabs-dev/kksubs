@@ -9,11 +9,11 @@ import time
 
 import pickle
 
-from kksubs.data import Style, Subtitle, SubtitleGroup
+from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
 
 from kksubs.service.extractors import extract_styles, extract_subtitles
-from kksubs.service.renamer import rename_images, update_images_in_textpath
 from kksubs.service.subtitle import add_subtitles_to_image
+from kksubs.utils.renamer import rename_images, update_images_in_textpath
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class InvalidProjectException(FileNotFoundError):
     def __init__(self, project_directory):
         self.project_directory = project_directory
 
-class Project:
+class ProjectService:
     def __init__(
             self, project_directory:str=None, create=None,
             metadata_directory:str=None,
@@ -89,6 +89,7 @@ class Project:
         if create:
             self.create()
 
+    def validate(self):
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
             raise InvalidProjectException(self.project_directory)
         

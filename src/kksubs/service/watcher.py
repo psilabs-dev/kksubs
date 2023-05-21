@@ -5,13 +5,13 @@ from typing import Dict, List
 import traceback
 import datetime
 
-from kksubs.service.project import Project
+from kksubs.service.project import ProjectService
 
 logger = logging.getLogger(__name__)
 
 class ProjectWatcher:
 
-    def __init__(self, project:Project):
+    def __init__(self, project:ProjectService):
         # watch for changes in the project directory.
         self.project = project
         # sums the modified times to check for difference.

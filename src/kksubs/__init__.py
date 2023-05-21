@@ -1,5 +1,5 @@
 import os
-from kksubs.service.project import Project
+from kksubs.service.project import ProjectService
 from typing import Dict, List
 import logging
 
@@ -13,11 +13,11 @@ def create_project(project_directory:str=None):
     if confirmation!="Y":
         print("Operation cancelled.")
         return 1
-    return Project(project_directory=project_directory, create=True)
+    return ProjectService(project_directory=project_directory, create=True)
 
 def rename_images(project_directory:str=None):
     logger.info("Renaming images.")
-    return Project(project_directory=project_directory).rename_images()
+    return ProjectService(project_directory=project_directory).rename_images()
 
 def add_subtitles(
         project_directory:str=None, drafts:Dict[str, List[int]]=None, prefix:str=None, 
@@ -30,7 +30,7 @@ def add_subtitles(
         watch = False
 
     if watch:
-        watcher = ProjectWatcher(Project(project_directory=project_directory))
+        watcher = ProjectWatcher(ProjectService(project_directory=project_directory))
         watcher.watch(
             drafts=drafts, prefix=prefix, 
             allow_multiprocessing=allow_multiprocessing, 
@@ -39,7 +39,7 @@ def add_subtitles(
         return 0
 
     logger.info("Adding subtitles.")
-    return Project(project_directory=project_directory).add_subtitles(
+    return ProjectService(project_directory=project_directory).add_subtitles(
         drafts=drafts, prefix=prefix, 
         allow_multiprocessing=allow_multiprocessing, 
         allow_incremental_updating=allow_incremental_updating
@@ -47,4 +47,4 @@ def add_subtitles(
 
 def clear_subtitles(project_directory:str=None, drafts:Dict[str, List[int]]=None, force=False):
     logger.info("Clearing subtitles.")
-    return Project(project_directory=project_directory).clear_subtitles(drafts=drafts, force=force)
+    return ProjectService(project_directory=project_directory).clear_subtitles(drafts=drafts, force=force)

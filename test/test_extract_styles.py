@@ -1,5 +1,5 @@
 import unittest
-from kksubs.data import BoxData, Style, TextData
+from kksubs.data.subtitle import BoxData, Style, TextData
 
 from kksubs.service.extractors import extract_styles
 
