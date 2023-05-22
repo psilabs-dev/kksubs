@@ -26,7 +26,7 @@ def command_line():
     parser.add_argument('--metadata', type=str, default='.', help='Specify directory to store metadata files.')
     parser.add_argument('--game-directory', type=str, help='Specify path to game directory.')
     parser.add_argument('--library', type=str, help='Specify path to library.')
-    parser.add_argument('--workspace', type=str, default='./workspace', help='Specify location for subtitle workspace.')
+    parser.add_argument('--workspace', type=str, help='Specify location for subtitle workspace.')
 
     subparsers = parser.add_subparsers(dest='command')
 
