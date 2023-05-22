@@ -19,6 +19,8 @@ LIBRARY_KEY = 'library-directory'
 WORKSPACE_KEY = 'workspace-directory'
 CURRENT_PROJECT_KEY = 'current-project'
 
+SYNC_TIME_KEY = 'last-synced-time'
+
 SUBTITLE_SYNC_STATE_KEY = 'subtitle-sync-state'
 STUDIO_SYNC_STATE_KEY = 'studio-sync-state'
 
@@ -49,6 +51,7 @@ class ProjectController:
 
         self.subtitle_sync_state = None
         self.studio_sync_state = None
+        self.last_sync_time = None
 
         self.subtitle_project_service = subtitle_project_service
         self.studio_project_service = studio_project_service
@@ -75,6 +78,7 @@ class ProjectController:
 
             SUBTITLE_SYNC_STATE_KEY: self.subtitle_sync_state,
             STUDIO_SYNC_STATE_KEY: self.studio_sync_state,
+            SYNC_TIME_KEY: self.last_sync_time,
         }
         metadata_file_path = self._get_metadata_path(metadata_file_path=metadata_file_path)
         with open(metadata_file_path, 'w') as writer:
@@ -98,6 +102,7 @@ class ProjectController:
         metadata[CURRENT_PROJECT_KEY] = metadata.get(CURRENT_PROJECT_KEY)
         metadata[SUBTITLE_SYNC_STATE_KEY] = metadata.get(SUBTITLE_SYNC_STATE_KEY)
         metadata[STUDIO_SYNC_STATE_KEY] = metadata.get(STUDIO_SYNC_STATE_KEY)
+        metadata[SYNC_TIME_KEY] = metadata.get(SYNC_TIME_KEY)
 
         for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
             path = metadata.get(key)
@@ -115,6 +120,7 @@ class ProjectController:
 
         self.subtitle_sync_state = metadata.get(SUBTITLE_SYNC_STATE_KEY)
         self.studio_sync_state = metadata.get(STUDIO_SYNC_STATE_KEY)
+        self.last_sync_time = metadata.get(SYNC_TIME_KEY)
 
         self.subtitle_project_service = SubtitleProjectService(project_directory=workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
@@ -235,13 +241,13 @@ class ProjectController:
     def _sync_studio(self):
         # just sync studio (game and library)
         previous_state = self.studio_sync_state
-        new_sync_state = self.studio_project_service.sync_studio_project(self.current_project, previous_state=previous_state)
+        new_sync_state = self.studio_project_service.sync_studio_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.studio_sync_state = new_sync_state
 
     def _sync_workspace(self):
         # sync workspace into library (no need to sync captures)
         previous_state = self.subtitle_sync_state
-        new_sync_state = self.studio_project_service.sync_subtitle_project(self.current_project, previous_state=previous_state)
+        new_sync_state = self.studio_project_service.sync_subtitle_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.subtitle_sync_state = new_sync_state
         self._pull_captures()
 

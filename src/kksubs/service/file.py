@@ -17,6 +17,7 @@ class FileService:
             self, 
             source, destination, 
             previous_state:Union[str, Dict]=None,
+            last_sync_time:int=None,
     ) -> Union[Bucket, int]:
         
         source_exists = os.path.exists(source)
@@ -25,10 +26,18 @@ class FileService:
         if not source_exists and not dest_exists:
             return None
         if not source_exists:
-            output = self.sync_unidirectional(destination, source)
+            mtime = os.path.getmtime(destination)
+            if last_sync_time is None or mtime > last_sync_time:
+                output = self.sync_unidirectional(destination, source)
+            else:
+                output = None
             return output
         if not dest_exists:
-            output = self.sync_unidirectional(source, destination)
+            mtime = os.path.getmtime(source)
+            if last_sync_time is None or mtime > last_sync_time:
+                output = self.sync_unidirectional(source, destination)
+            else:
+                output = None
             return output
 
         if os.path.isfile(source):

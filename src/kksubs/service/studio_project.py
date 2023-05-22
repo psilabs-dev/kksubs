@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import fnmatch
+import time
 
 from kksubs.data.file import Bucket
 from kksubs.exceptions import InvalidProjectException
@@ -195,7 +196,7 @@ class StudioProjectService:
                 new_state[file] = Bucket(path=workspace_file_path).files
         return new_state
 
-    def sync_studio_project(self, project_name, previous_state:Dict=None) -> Dict:
+    def sync_studio_project(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
         # sync between library and workspace and returns the final state as output.
         new_state = dict()
         
@@ -207,12 +208,12 @@ class StudioProjectService:
 
             workspace_file_path = os.path.join(self.game_directory, file)
             library_file_path = os.path.join(self.library, project_name, file)
-            output_bucket = self.file_service.sync_bidirectional(workspace_file_path, library_file_path, previous_state=relevant_state)
+            output_bucket = self.file_service.sync_bidirectional(workspace_file_path, library_file_path, previous_state=relevant_state, last_sync_time=last_sync_time)
             new_state[file] = output_bucket.state()
 
         return new_state
     
-    def sync_subtitle_project(self, project_name, previous_state:Dict=None) -> Dict:
+    def sync_subtitle_project(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
         new_state = dict()
 
         for file in self.subtitle_file_names:
@@ -222,8 +223,8 @@ class StudioProjectService:
                 relevant_state = previous_state.get(file)
             workspace_file_path = os.path.join(self.workspace, file)
             library_file_path = os.path.join(self.library, project_name, 'kksubs-project', file)
-            output = self.file_service.sync_bidirectional(workspace_file_path, library_file_path, previous_state=relevant_state)
-            
+            output = self.file_service.sync_bidirectional(workspace_file_path, library_file_path, previous_state=relevant_state, last_sync_time=last_sync_time)
+
             if output is None:
                 new_state[file] = None
             elif isinstance(output, int) or isinstance(output, float):
