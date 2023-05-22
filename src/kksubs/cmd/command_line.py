@@ -30,6 +30,8 @@ def command_line():
 
     subparsers = parser.add_subparsers(dest='command')
 
+    compose_parser = subparsers.add_parser('compose', help='Compose subtitles once.')
+
     activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
 
     clear_parser = subparsers.add_parser('clear', help='Clear subtitle outputs.')
@@ -59,6 +61,9 @@ def command_line():
     controller.configure(metadata_directory, game_directory, library, workspace)
 
     # START SUBTITLE COMMANDS
+    if command == 'compose':
+        controller.compose()
+
     if command == 'activate':
         controller.activate()
 

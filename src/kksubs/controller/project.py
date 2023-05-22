@@ -119,11 +119,15 @@ class ProjectController:
 
     @spacing
     def info(self):
-        print(f'--- KKSUBS (working on \"{self.current_project}\") ---\n')
         print(f'Game:                {self.game_directory}')
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
         self.list_projects(pattern='*', limit=10)
+        print(f'--- KKSUBS (working on \"{self.current_project}\") ---')
+
+    def compose(self):
+        self.subtitle_project_service.validate()
+        self.subtitle_project_service.add_subtitles(allow_incremental_updating=True, update_drafts=True)
 
     def activate(self):
         # continuously compose
@@ -165,10 +169,11 @@ class ProjectController:
         self.current_project = project_name
 
     def checkout(self, project_name:str):
+        self.sync()
         self._unassign()
         self._assign(project_name)
         self._pull_to_subtitle_project()
-        self._pull_captures()
+        self.subtitle_project_service.create()
 
     def create(self, project_name:str):
         self.studio_project_service.create_project(project_name)

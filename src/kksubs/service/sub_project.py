@@ -437,7 +437,7 @@ class SubtitleProjectService:
         return 0
     
     def delete_project(self):
-        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.state_directory, self.styles_path]:
+        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.metadata_directory, self.styles_path]:
             if not os.path.exists(path):
                 continue
             if os.path.isdir(path):

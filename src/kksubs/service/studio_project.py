@@ -26,7 +26,7 @@ class StudioProjectService:
         if studio_file_names is None:
             studio_file_names = ['UserData']
         if subtitle_file_names is None:
-            subtitle_file_names = ['drafts', 'output', 'styles.yml', '.kksubs']
+            subtitle_file_names = ['drafts', 'output', 'styles.yml']
 
         self.library = library
         self.game_directory = game_directory

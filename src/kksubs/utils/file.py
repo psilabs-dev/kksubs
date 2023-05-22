@@ -72,10 +72,8 @@ def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
 
     if previous_state is None:
         previous_state = bucket_a.state()
-    else:
-        last_sync_time = previous_state.get('time')
-    if last_sync_time is None:
-            last_sync_time = 0
+
+    last_sync_time = previous_state.get('time')
 
     paths_a = set(bucket_a.files.keys())
     paths_b = set(bucket_b.files.keys())
