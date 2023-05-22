@@ -3,8 +3,6 @@ import logging
 
 from kksubs.controller.project import ProjectController
 
-from kksubs.exceptions import InvalidProjectException
-
 log_levels = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
@@ -12,21 +10,18 @@ log_levels = {
     "error": logging.ERROR,
 }
 
-logging.basicConfig(level=logging.INFO) # debugging
+# logging.basicConfig(level=logging.INFO) # debugging
 logger = logging.getLogger(__name__)
 
-# TODO: slowly stabilize and add back commands.
 def command_line():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Command line tool for Koikatsu subtitling and project management.')
 
-    # necessary configuration data
-    # search workspace for previous configuration details.
-    # when run for the first time, will automatically create a kksubs project in the workspace and copy the contents of UserData captures over.
     parser.add_argument('--metadata', type=str, default='.', help='Specify directory to store metadata files.')
     parser.add_argument('--game-directory', type=str, help='Specify path to game directory.')
     parser.add_argument('--library', type=str, help='Specify path to library.')
     parser.add_argument('--workspace', type=str, help='Specify location for subtitle workspace.')
+    parser.add_argument('--log', type=str, default='warning', help='Set logging level.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -54,6 +49,8 @@ def command_line():
     command = args.command
 
     controller = ProjectController()
+    log_level = 'info' if command == 'activate' else args.log
+    logging.basicConfig(level=log_levels.get(log_level))
     metadata_directory = args.metadata
     game_directory = args.game_directory
     library = args.library

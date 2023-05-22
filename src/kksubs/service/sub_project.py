@@ -47,7 +47,7 @@ def add_subtitle_process(
 
 class SubtitleProjectService:
     def __init__(
-            self, project_directory:str=None, create=None,
+            self, project_directory:str=None,
             metadata_directory:str=None,
             state_directory:str=None,
             images_dir:str=None,
