@@ -15,7 +15,7 @@ class SubtitleController:
 
     def configure(self, project_directory:str=None):
         self.project_directory = os.path.realpath(project_directory)
-        self.service = SubtitleProjectService(project_directory=project_directory)
+        self.service = SubtitleProjectService(project_directory=self.project_directory)
         self.watcher = SubtitleWatcher(self.service)
 
     def info(self):
