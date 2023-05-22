@@ -23,9 +23,10 @@ def command_line():
     # necessary configuration data
     # search workspace for previous configuration details.
     # when run for the first time, will automatically create a kksubs project in the workspace and copy the contents of UserData captures over.
+    parser.add_argument('--metadata', type=str, default='.', help='Specify directory to store metadata files.')
     parser.add_argument('--game-directory', type=str, help='Specify path to game directory.')
     parser.add_argument('--library', type=str, help='Specify path to library.')
-    parser.add_argument('--workspace', type=str, default='.', help='Specify location for subtitle workspace.')
+    parser.add_argument('--workspace', type=str, default='./workspace', help='Specify location for subtitle workspace.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -43,7 +44,7 @@ def command_line():
     checkout_parser.add_argument('project_name', type=str, help='Name of project to checkout.')
 
     delete_parser = subparsers.add_parser('delete', help='Delete a project or multiple projects')
-    checkout_parser.add_argument('project_name', type=str, help='Name of project to delete.')
+    delete_parser.add_argument('project_name', type=str, help='Name of project to delete.')
 
     sync_parser = subparsers.add_parser('sync', help='Sync current project with library.')
     
@@ -51,10 +52,11 @@ def command_line():
     command = args.command
 
     controller = ProjectController()
+    metadata_directory = args.metadata
     game_directory = args.game_directory
     library = args.library
     workspace = args.workspace
-    controller.configure(game_directory, library, workspace)
+    controller.configure(metadata_directory, game_directory, library, workspace)
 
     # START SUBTITLE COMMANDS
     if command == 'activate':

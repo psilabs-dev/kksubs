@@ -10,6 +10,7 @@ import time
 import pickle
 
 from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
+from kksubs.exceptions import InvalidProjectException
 
 from kksubs.service.extractors import extract_styles, extract_subtitles
 from kksubs.service.subtitle import add_subtitles_to_image
@@ -44,12 +45,7 @@ def add_subtitle_process(
 # project preparation layer.
 # folder/file logic, obtain read data, deserialization
 
-class InvalidProjectException(FileNotFoundError):
-    "Project does not have a necessary directory to perform kksubs operations."
-    def __init__(self, project_directory):
-        self.project_directory = project_directory
-
-class ProjectService:
+class SubtitleProjectService:
     def __init__(
             self, project_directory:str=None, create=None,
             metadata_directory:str=None,
@@ -61,8 +57,8 @@ class ProjectService:
     ):
         if project_directory is None:
             project_directory = "."
-        if create is None:
-            create = False
+        # if create is None:
+        #     create = False
 
         project_directory = os.path.realpath(project_directory)
         if metadata_directory is None:
@@ -86,8 +82,8 @@ class ProjectService:
         self.outputs_dir = outputs_dir
         self.styles_path = styles_path
 
-        if create:
-            self.create()
+        # if create:
+        #     self.create()
 
     def validate(self):
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
@@ -440,3 +436,11 @@ class ProjectService:
                 os.remove(draft_state)
         return 0
     
+    def delete_project(self):
+        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.state_directory, self.styles_path]:
+            if not os.path.exists(path):
+                continue
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            if os.path.isfile(path):
+                os.remove(path)
