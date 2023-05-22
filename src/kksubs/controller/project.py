@@ -7,6 +7,7 @@ from kksubs.service.file import FileService
 from kksubs.service.studio_project import StudioProjectService
 
 from kksubs.service.sub_project import SubtitleProjectService
+from kksubs.view.project import ProjectView
 from kksubs.watcher.subtitle import SubtitleWatcher
 from kksubs.utils.coalesce import coalesce
 from kksubs.utils.file import *
@@ -34,6 +35,8 @@ class ProjectController:
 
             subtitle_project_service:SubtitleProjectService=None,
             studio_project_service:StudioProjectService=None,
+            project_view:ProjectView=None,
+
             current_project:str=None,
     ):
         
@@ -49,6 +52,7 @@ class ProjectController:
 
         self.subtitle_project_service = subtitle_project_service
         self.studio_project_service = studio_project_service
+        self.project_view = project_view
 
     def _get_metadata_path(self, metadata_file_path:str=None):
         return coalesce(metadata_file_path, self.metadata_file_path)
@@ -114,6 +118,8 @@ class ProjectController:
 
         self.subtitle_project_service = SubtitleProjectService(project_directory=workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
+        self.project_view = ProjectView()
+
         self.file_service = FileService()
         self.subtitle_watcher = SubtitleWatcher(self.subtitle_project_service)
 
@@ -169,6 +175,21 @@ class ProjectController:
         self.current_project = project_name
 
     def checkout(self, project_name:str):
+        project_list = self.studio_project_service.list_projects(project_name)
+        if len(project_list) == 0:
+            raise InvalidProjectException(project_name)
+        if len(project_list) == 1:
+            project_name = project_list[0]
+        elif len(project_list) > 1:
+            project_name = self.project_view.select_project_from_list(self.current_project, project_list)
+
+        confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
+        if not confirm:
+            return
+        if project_name == self.current_project:
+            print(f'Current workspace is already assigned to {project_name}.')
+            return
+
         self.sync()
         self._unassign()
         self._assign(project_name)
