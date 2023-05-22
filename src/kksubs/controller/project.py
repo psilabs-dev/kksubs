@@ -122,7 +122,7 @@ class ProjectController:
         self.studio_sync_state = metadata.get(STUDIO_SYNC_STATE_KEY)
         self.last_sync_time = metadata.get(SYNC_TIME_KEY)
 
-        self.subtitle_project_service = SubtitleProjectService(project_directory=workspace)
+        self.subtitle_project_service = SubtitleProjectService(project_directory=self.workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
         self.project_view = ProjectView()
 
