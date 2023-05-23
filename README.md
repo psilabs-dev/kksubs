@@ -61,7 +61,7 @@ add_subtitles('.', 'draft1.txt')
 ```
 You can also run this from the command line.
 ```console
-$ kksubs-compose -d draft1.txt
+$ kksubs compose -d draft1.txt
 ```
 See [commands](/src/kksubs/cmd/README.md) for more information.
 
