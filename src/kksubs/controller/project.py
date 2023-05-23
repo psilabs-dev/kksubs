@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import List, Optional
 import yaml
 from kksubs.exceptions import InvalidProjectException
 from kksubs.service.file import FileService
@@ -24,6 +24,8 @@ SYNC_TIME_KEY = 'last-synced-time'
 
 SUBTITLE_SYNC_STATE_KEY = 'subtitle-sync-state'
 STUDIO_SYNC_STATE_KEY = 'studio-sync-state'
+
+LIST_PROJECT_HISTORY_KEY = 'list-project-history'
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,8 @@ class ProjectController:
         self.project_watcher = None
         self.project_view = project_view
 
+        self.list_project_history:List[str] = None
+
     def _get_metadata_path(self, metadata_file_path:str=None):
         return coalesce(metadata_file_path, self.metadata_file_path)
 
@@ -82,6 +86,8 @@ class ProjectController:
             SUBTITLE_SYNC_STATE_KEY: self.subtitle_sync_state,
             STUDIO_SYNC_STATE_KEY: self.studio_sync_state,
             SYNC_TIME_KEY: self.last_sync_time,
+
+            LIST_PROJECT_HISTORY_KEY: self.list_project_history,
         }
         metadata_file_path = self._get_metadata_path(metadata_file_path=metadata_file_path)
         with open(metadata_file_path, 'w') as writer:
@@ -106,6 +112,8 @@ class ProjectController:
         metadata[SUBTITLE_SYNC_STATE_KEY] = metadata.get(SUBTITLE_SYNC_STATE_KEY)
         metadata[STUDIO_SYNC_STATE_KEY] = metadata.get(STUDIO_SYNC_STATE_KEY)
         metadata[SYNC_TIME_KEY] = metadata.get(SYNC_TIME_KEY)
+        
+        metadata[LIST_PROJECT_HISTORY_KEY] = metadata.get(LIST_PROJECT_HISTORY_KEY)
 
         for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
             path = metadata.get(key)
@@ -124,6 +132,8 @@ class ProjectController:
         self.subtitle_sync_state = metadata.get(SUBTITLE_SYNC_STATE_KEY)
         self.studio_sync_state = metadata.get(STUDIO_SYNC_STATE_KEY)
         self.last_sync_time = metadata.get(SYNC_TIME_KEY)
+
+        self.list_project_history = metadata.get(LIST_PROJECT_HISTORY_KEY)
 
         self.subtitle_project_service = SubtitleProjectService(project_directory=self.workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
@@ -191,29 +201,50 @@ class ProjectController:
     def _assign(self, project_name:str):
         self.current_project = project_name
 
-    def checkout(self, project_name:str):
-        project_list = self.studio_project_service.list_projects(project_name)
-        if len(project_list) == 0:
-            raise InvalidProjectException(project_name)
-        if len(project_list) == 1:
-            project_name = project_list[0]
-        elif len(project_list) > 1:
-            project_name = self.project_view.select_project_from_list(self.current_project, project_list)
+    def _get_project_from_history(self, project_name):
+        previous_projects = self.list_project_history
+        if previous_projects is not None:
+            if project_name.isdigit() and int(project_name) < len(previous_projects):
+                project_name = previous_projects[int(project_name)]
+        return project_name
 
-        confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
-        if not confirm:
-            return
-        if project_name == self.current_project:
-            print(f'Current workspace is already assigned to {project_name}.')
-            return
+    def checkout(self, project_name:str, new_branch:bool=False):
 
-        self.sync()
-        self._unassign()
-        self._assign(project_name)
-        self._pull_to_subtitle_project()
-        self.subtitle_project_service.create()
+        if new_branch:
+            # for creating new branch.
+            if self.current_project is not None:
+                parent_dir = os.path.dirname(self.current_project)
+                project_name = os.path.join(parent_dir, project_name)
+                self.create(project_name)
+        
+        else:
+            project_name = self._get_project_from_history(project_name)
+            project_list = self.studio_project_service.list_projects(project_name)
+            # if existing branch, search for eligible branches.
+            if len(project_list) == 0:
+                raise InvalidProjectException(project_name)
+            if len(project_list) == 1:
+                project_name = project_list[0]
+            elif len(project_list) > 1:
+                project_name = self.project_view.select_project_from_list(self.current_project, project_list)
 
-    def create(self, project_name:str):
+            confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
+            if not confirm:
+                return
+            if project_name == self.current_project:
+                print(f'Current workspace is already assigned to {project_name}.')
+                return
+
+            if self.current_project is not None and self.studio_project_service.is_project(self.current_project):
+                self.sync()
+            
+            self._unassign()
+            self._assign(project_name)
+            self._pull_to_subtitle_project()
+            self.subtitle_project_service.create()
+            self.sync()
+
+    def create(self, project_name:str):            
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
         capture_path = self.studio_project_service.to_project_capture_path(project_name)
@@ -225,6 +256,8 @@ class ProjectController:
     def list_projects(self, pattern:str, limit:Optional[int]=None):
         logger.info(f"Listing projects with pattern {pattern}.")
         projects = self.studio_project_service.list_projects(pattern=pattern)
+        num_projects = len(projects)
+
         if limit is None:
             projects = projects[:]
         elif isinstance(limit, int):
@@ -240,11 +273,15 @@ class ProjectController:
         @spacing
         def display():
             print('List of projects:\n')
-            for project in projects:
-                print(f"- {project}")
+            for i, project in enumerate(projects):
+                print(f"[{i}] {project}")
+            if limit is not None and limit < num_projects:
+                print('   ...')
         display()
+        self.list_project_history = projects
 
     def delete(self, project_name:str):
+        project_name = self._get_project_from_history(project_name)
         self.studio_project_service.delete_project(project_name, safe=False)
         if project_name == self.current_project:
             self._unassign()

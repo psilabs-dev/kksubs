@@ -38,6 +38,7 @@ def command_line():
     list_parser.add_argument('-p', '--pattern', type=str)
 
     checkout_parser = subparsers.add_parser('checkout', help='Checkout a project from library.')
+    checkout_parser.add_argument('-b', '--branch', action='store_true', help='New project from current with same parent directory.')
     checkout_parser.add_argument('project_name', type=str, help='Name of project to checkout.')
 
     delete_parser = subparsers.add_parser('delete', help='Delete a project or multiple projects')
@@ -79,7 +80,7 @@ def command_line():
 
     if command == 'checkout': # a.k.a. assign
         project_name = args.project_name
-        controller.checkout(project_name)
+        controller.checkout(project_name, args.branch)
 
     if command == 'delete':
         project_name = args.project_name

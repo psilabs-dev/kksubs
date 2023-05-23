@@ -35,6 +35,9 @@ Makes a copy of `UserData` in the game directory into the library, and also copi
 ## List Projects
 ```bash
 kkp list -p [pattern]
+# [0] project-1
+# [1] project-2
+# ...
 ```
 List valid projects found in the `[library]`. The list can be filtered with a pattern using wildcards.
 
@@ -55,6 +58,18 @@ Saves and synchronizes files between the `[game]`, `[library]`, and `[workspace]
 kkp checkout [project-name]
 ```
 Change the current project to another project in the library. This replaces the game directory's `UserData` with the one found under `[library]/[project-name]`. This also replaces the items in the subtitle workspace with the ones found under `[library]/[project-name]/kksubs-project`.
+
+Checkout to a new project from the current one like git. (This will create a project in the same directory as the current project.)
+```bash
+kkp checkout [project-name] --branch
+```
+Combine `list` and `checkout` to checkout based on numbers.
+```bash
+kkp list -p *world*
+# [0] hello/world
+kkp checkout 0
+# checkout project hello/world
+```
 
 ## Delete Project
 ```bash

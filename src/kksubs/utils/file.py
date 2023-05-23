@@ -61,7 +61,11 @@ def sync_unidirectional(source, destination):
             source_bucket.copy_to(dest_bucket, path)
             continue
         for path in delete_from_dest:
-            dest_bucket.delete(path)
+            try:
+                dest_bucket.delete(path)
+            except:
+                print(path)
+                raise
         # for path in unmodified:
         #     continue
     return source_bucket

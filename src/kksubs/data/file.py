@@ -48,7 +48,11 @@ class Bucket:
 
     def delete(self, path:str):
         path = os.path.join(self.path, path)
-        os.remove(path)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except PermissionError:
+                raise PermissionError(f'{path} cannot be deleted.')
 
     def state(self):
         return {
