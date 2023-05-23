@@ -151,7 +151,9 @@ class ProjectController:
 
     def activate(self):
         # continuously compose
-        self.project_watcher.pass_sync(self.sync)
+        def sync_func():
+            self.sync(compose=False)
+        self.project_watcher.pass_sync(sync_func)
         self.project_watcher.watch()
 
         # self.subtitle_project_service.validate()
@@ -260,14 +262,15 @@ class ProjectController:
         new_sync_state = self.studio_project_service.sync_subtitle_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.subtitle_sync_state = new_sync_state
 
-    def sync(self):
+    def sync(self, compose:bool=True):
         if self.current_project is None:
             logger.error(f'No assigned project to sync with.')
             return
         self._sync_studio()
         self._sync_workspace()
         self._pull_captures()
-        self.compose()
+        if compose:
+            self.compose()
 
     def close(self):
         # persist changes to metadata
