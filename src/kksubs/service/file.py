@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Union
+from typing import Dict, List, Union
 import yaml
 from kksubs.data.file import Bucket
 
@@ -10,8 +10,8 @@ class FileService:
     def transfer(self, source, destination):
         return transfer(source, destination)
     
-    def sync_unidirectional(self, source, destination) -> Bucket:
-        return sync_unidirectional(source, destination)
+    def sync_unidirectional(self, source, destination, filename_filter:List[str]=None) -> Bucket:
+        return sync_unidirectional(source, destination, filename_filter=filename_filter)
     
     def sync_bidirectional(
             self, 

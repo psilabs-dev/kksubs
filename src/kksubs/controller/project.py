@@ -193,7 +193,11 @@ class ProjectController:
             studio_project_path = self.studio_project_service.to_project_path(project_name)
             kksubs_project_path = os.path.join(studio_project_path, 'kksubs-project')
             if os.path.exists(kksubs_project_path):
-                self.file_service.sync_unidirectional(kksubs_project_path, self.workspace)
+                self.file_service.sync_unidirectional(
+                    kksubs_project_path, 
+                    self.workspace, 
+                    filename_filter=['drafts', 'style.yml', 'style.yaml', 'output']
+                )
         else:
             raise InvalidProjectException(project_name)
         self._pull_captures()

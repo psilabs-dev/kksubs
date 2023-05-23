@@ -3,7 +3,7 @@ import os
 from os.path import getmtime
 
 import shutil
-from typing import Dict
+from typing import Dict, List
 
 from kksubs.data.file import Bucket
 
@@ -36,7 +36,14 @@ def transfer(source:str, destination:str):
         shutil.copytree(source, destination, copy_function=shutil.copy2, dirs_exist_ok=True)
         return
 
-def sync_unidirectional(source, destination):
+def sync_unidirectional(source, destination, filename_filter:List[str]=None):
+    if filename_filter is not None:
+        for target in filename_filter:
+            source_target = os.path.join(source, target)
+            dest_target = os.path.join(destination, target)
+            sync_unidirectional(source_target, dest_target)
+        return Bucket(path=source)
+
     # assumption that destination does not get changed.
     if not os.path.exists(source):
         return
