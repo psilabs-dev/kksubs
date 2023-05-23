@@ -8,6 +8,7 @@ from kksubs.service.studio_project import StudioProjectService
 
 from kksubs.service.sub_project import SubtitleProjectService
 from kksubs.view.project import ProjectView
+from kksubs.watcher.project import ProjectWatcher
 from kksubs.watcher.subtitle import SubtitleWatcher
 from kksubs.utils.coalesce import coalesce
 from kksubs.utils.file import *
@@ -55,6 +56,8 @@ class ProjectController:
 
         self.subtitle_project_service = subtitle_project_service
         self.studio_project_service = studio_project_service
+        self.subtitle_watcher = None
+        self.project_watcher = None
         self.project_view = project_view
 
     def _get_metadata_path(self, metadata_file_path:str=None):
@@ -128,6 +131,7 @@ class ProjectController:
 
         self.file_service = FileService()
         self.subtitle_watcher = SubtitleWatcher(self.subtitle_project_service)
+        self.project_watcher = ProjectWatcher(self.subtitle_project_service, self.studio_project_service)
 
     @spacing
     def info(self):
@@ -144,10 +148,8 @@ class ProjectController:
     def activate(self):
         # continuously compose
         self.subtitle_project_service.validate()
-        self.subtitle_watcher.watch(
-            allow_incremental_updating=True,
-            allow_multiprocessing=True
-        )
+        self.subtitle_watcher.load_watch_arguments(allow_incremental_updating=True, allow_multiprocessing=True)
+        self.subtitle_watcher.watch()
 
     def clear(self):
         # clear outputs and metadata
@@ -161,7 +163,7 @@ class ProjectController:
 
     def _pull_captures(self):
         # just sync captures (library and kksub project)
-        capture_path = self.studio_project_service.to_capture_path(self.current_project)
+        capture_path = self.studio_project_service.to_project_capture_path(self.current_project)
         self.file_service.sync_unidirectional(capture_path, self.subtitle_project_service.images_dir)
 
     def _pull_to_subtitle_project(self):
@@ -205,10 +207,11 @@ class ProjectController:
     def create(self, project_name:str):
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
-        capture_path = self.studio_project_service.to_capture_path(project_name)
+        capture_path = self.studio_project_service.to_project_capture_path(project_name)
         self.file_service.sync_unidirectional(capture_path, self.subtitle_project_service.images_dir)
         self.subtitle_project_service.create()
         self.sync()
+        self.compose()
 
     def list_projects(self, pattern:str, limit:Optional[int]=None):
         logger.info(f"Listing projects with pattern {pattern}.")
@@ -258,6 +261,7 @@ class ProjectController:
         self._sync_studio()
         self._sync_workspace()
         self._pull_captures()
+        self.compose()
 
     def close(self):
         # persist changes to metadata

@@ -268,8 +268,12 @@ class StudioProjectService:
         for name in project_names:
             self.delete_project(name, safe=False)
         return True
+    
+    def to_game_capture_path(self):
+        capture_path = os.path.join(self.game_directory, 'UserData/cap')
+        return capture_path
 
-    def to_capture_path(self, project_name:str):
+    def to_project_capture_path(self, project_name:str):
         if not self.is_project(project_name):
             raise InvalidProjectException(project_name)
         project_path = self.to_project_path(project_name)

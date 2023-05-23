@@ -6,84 +6,46 @@ import traceback
 import datetime
 
 from kksubs.service.sub_project import SubtitleProjectService
+from kksubs.watcher.file_change import FileChangeWatcher
 
 logger = logging.getLogger(__name__)
 
-class SubtitleWatcher:
+class SubtitleWatcher(FileChangeWatcher):
 
     def __init__(self, subtitle_project_service:SubtitleProjectService):
-        # watch for changes in the project directory.
+        super().__init__()
         self.service = subtitle_project_service
-        # sums the modified times to check for difference.
-        # due to decimal precision of mod time, it is effectively unique.
-        self.drafts_mtime_sum = None
-        self.images_mtime_sum = None
-        self.styles_mtime = None
 
-    def detect_project_changes(self) -> bool:
-        # check if draft has changed. Will trigger on startup and when one of the following has been changed.
-        drafts_mtime_sum = sum(map(os.path.getmtime, [os.path.join(self.service.drafts_dir, draft) for draft in os.listdir(self.service.drafts_dir)]))
-        images_mtime_sum = sum(map(os.path.getmtime, [os.path.join(self.service.images_dir, image) for image in os.listdir(self.service.images_dir)]))
-        styles_mtime = None if not os.path.exists(os.path.join(self.service.project_directory, "styles.yml")) else os.path.getmtime(os.path.join(self.service.project_directory, "styles.yml"))
+        self.watch_files([
+            self.service.drafts_dir,
+            self.service.images_dir,
+            os.path.join(self.service.project_directory, 'styles.yml')
+        ])
 
-        changed_project = False
+        # arguments.
+        self.drafts = None
+        self.prefix = None
+        self.allow_multiprocessing = None
+        self.allow_incremental_updating = None
+        self.update_drafts = True
 
-        changed_drafts = self.drafts_mtime_sum is None or self.drafts_mtime_sum != drafts_mtime_sum
-        changed_images = self.images_mtime_sum is None or self.images_mtime_sum != images_mtime_sum
-        changed_styles = (self.styles_mtime is None and styles_mtime is not None) or (styles_mtime is None and self.styles_mtime is not None) or (styles_mtime!=self.styles_mtime)
+    def time(self):
+        return datetime.datetime.now().time().strftime('%H:%M:%S')
+    
+    def load_watch_arguments(self, drafts=None, prefix=None, allow_multiprocessing=None, allow_incremental_updating=None):
+        self.drafts = drafts
+        self.prefix = prefix
+        self.allow_multiprocessing = allow_multiprocessing
+        self.allow_incremental_updating = allow_incremental_updating
 
-        if changed_drafts or changed_images or changed_styles:
-            changed_project = True
-
-        self.drafts_mtime_sum = drafts_mtime_sum
-        self.images_mtime_sum = images_mtime_sum
-        self.styles_mtime = styles_mtime
-
-        return changed_project
-
-    def action(
-            self, 
-            drafts:Dict[str, List[int]]=None, 
-            prefix:str=None, 
-            allow_multiprocessing:bool=None,
-            allow_incremental_updating:bool=None
-    ):
-        self.service.add_subtitles(
-                drafts=drafts, prefix=prefix, 
-                allow_multiprocessing=allow_multiprocessing, 
-                allow_incremental_updating=allow_incremental_updating,
-                update_drafts=True,
+    def event_trigger_action(self):
+        logger.info(f"{self.time()} Updates detected.")
+        return self.service.add_subtitles(
+            drafts=self.drafts, prefix=self.prefix,
+            allow_multiprocessing=self.allow_multiprocessing,
+            allow_incremental_updating=self.allow_incremental_updating,
+            update_drafts=True
             )
-
-    def watch(
-            self, drafts:Dict[str, List[int]]=None, prefix:str=None, 
-        allow_multiprocessing:bool=None,
-        allow_incremental_updating:bool=None,
-    ):
-
-        try:
-            logger.info("Watching project for changes.")
-            while True:
-                logger.debug("Scanning files.")
-                try:
-                    file_change_detected = self.detect_project_changes()
-
-                    if file_change_detected:
-                        logger.info("Project change detected, updating subtitles.")
-                        self.action(
-                            drafts=drafts, prefix=prefix, 
-                            allow_multiprocessing=allow_multiprocessing, 
-                            allow_incremental_updating=allow_incremental_updating,
-                        )
-                    else:
-                        now = datetime.datetime.now().time().strftime('%H:%M:%S')
-                        logger.info(f"{now} Scan complete: no changes detected.")
-                except KeyboardInterrupt:
-                    raise KeyboardInterrupt
-                except Exception:
-                    logger.error(f"An error occurred during scan cycle; retrying... Exception: {traceback.format_exc()}")
-
-                time.sleep(1)
-
-        except KeyboardInterrupt:
-            logger.info("Terminating watcher...")
+    
+    def event_idle_action(self):
+        logger.info(f"{self.time()} No changes detected.")

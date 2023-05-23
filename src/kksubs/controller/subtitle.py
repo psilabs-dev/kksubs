@@ -2,18 +2,21 @@ import os
 from kksubs.service.sub_project import SubtitleProjectService
 from typing import Dict, List
 import logging
+from kksubs.watcher.file_change import FileChangeWatcher
 
 from kksubs.watcher.subtitle import SubtitleWatcher
 
 logger = logging.getLogger(__name__)
 
 class SubtitleController:
-    def __init__(self):
+    def __init__(self, project_directory:str=None):
         self.project_directory = None
         self.service = None
         self.watcher = None
+        if project_directory is not None:
+            self.configure(project_directory=project_directory)
 
-    def configure(self, project_directory:str=None):
+    def configure(self, project_directory:str):
         self.project_directory = os.path.realpath(project_directory)
         self.service = SubtitleProjectService(project_directory=self.project_directory)
         self.watcher = SubtitleWatcher(self.service)
@@ -38,11 +41,17 @@ class SubtitleController:
             watch = False
 
         if watch:
-            self.watcher.watch(
-                drafts=drafts, prefix=prefix, 
-                allow_multiprocessing=allow_multiprocessing, 
-                allow_incremental_updating=allow_incremental_updating
+            self.watcher.load_watch_arguments(
+                drafts=drafts, prefix=prefix,
+                allow_multiprocessing=allow_multiprocessing, allow_incremental_updating=allow_incremental_updating
             )
+            self.watcher.watch()
+
+        return self.service.add_subtitles(
+            drafts=drafts, prefix=prefix, 
+            allow_multiprocessing=allow_multiprocessing, 
+            allow_incremental_updating=allow_incremental_updating
+        )
 
     def clear(self):
         return self.service.clear_subtitles(force=True)
