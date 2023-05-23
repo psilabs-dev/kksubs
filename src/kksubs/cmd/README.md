@@ -2,16 +2,16 @@
 
 Command line tools.
 
-* `kkp`: for subtitling images and general project management in an integrated environment.
+* `kkpm`: for subtitling images and general project management in an integrated environment.
 * `kksubs`: for only subtitling images.
 
-# KK Projects/`kkp`
+# KK Projects/`kkpm`
 
-`kkp` is a subtitling/project management tool for Koikatsu projects. Requires prior configuration to run successfully.
+`kkpm` is a subtitling/project management tool for Koikatsu projects. Requires prior configuration to run successfully.
 
 ## Initialize
 ```bash
-kkp --workspace [workspace] --game [game-directory] --library [library-directory]
+kkpm --workspace [workspace] --game [game-directory] --library [library-directory]
 ```
 Initializes the `kksubs` project. Configuration lives in `kksubs.yaml` file.
 
@@ -20,7 +20,7 @@ The `[game-directory]` is the game directory which contains the `UserData` folde
 ---
 ## Create Project
 ```bash
-kkp create [project-name]
+kkpm create [project-name]
 ```
 Makes a copy of `UserData` in the game directory into the library, and also copies the renders in `UserData/cap` to `[workspace]/images`. This is known as the "current project". Additionally, creates a `kksubs` subtitling project:
 ```
@@ -34,7 +34,7 @@ Makes a copy of `UserData` in the game directory into the library, and also copi
 
 ## List Projects
 ```bash
-kkp list -p [pattern]
+kkpm list -p [pattern]
 ```
 List valid projects found in the `[library]`. The list can be filtered with a pattern using wildcards.
 
@@ -52,13 +52,13 @@ Saves and synchronizes files between the `[game]`, `[library]`, and `[workspace]
 
 ## Checkout Project
 ```bash
-kkp checkout [project-name]
+kkpm checkout [project-name]
 ```
 Change the current project to another project in the library. This replaces the game directory's `UserData` with the one found under `[library]/[project-name]`. This also replaces the items in the subtitle workspace with the ones found under `[library]/[project-name]/kksubs-project`.
 
 ## Delete Project
 ```bash
-kkp delete [project-name]
+kkpm delete [project-name]
 ```
 Delete project with name `[project-name]` from the library.
 
@@ -66,13 +66,18 @@ If the current project is to be deleted, the contents of the workspace will be d
 
 ## Compose/Activate
 ```bash
-kkp compose
+kkpm compose
 ```
 Create subtitled images once. The images are saved in the `output` directory.
 ```bash
-kkp activate
+kkpm activate
 ```
-Continuously watch the `[workspace]` for changes, and apply subtitles as files in the `[workspace]` change. Furthermore, uses incremental updating to process only images whose image, subtitle or style has changed, accelerating the subtitling process. 
+Continuously watch the `[workspace]` and `[game]/UserData/cap` for changes, and applies two actions as observed files change:
+
+1. runs `kkpm sync`
+2. runs `kkpm compoose`
+
+Furthermore, uses incremental updating to process only images whose image, subtitle or style has changed, accelerating the subtitling process. 
 
 Persistent data used to accelerate subtitling is stored in the `[workspace]/.kksubs` directory. This is not necessary to add subtitles, but enables incremental updating.
 
@@ -110,4 +115,4 @@ kksubs --project [project-directory] compose
 kksubs --project [project-directory] activate
 kksubs --project [project-directory] clear
 ```
-Like `kkp`, `kksubs` is also equipped with `compose`, `activate` and `clear` commands, which serve the same purpose.
+Like `kkpm`, `kksubs` is also equipped with `compose`, `activate` and `clear` commands, which serve the same purpose. Since there is no game directory, `activate` will not search for changes there.

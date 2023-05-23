@@ -56,7 +56,7 @@ class ProjectController:
 
         self.subtitle_project_service = subtitle_project_service
         self.studio_project_service = studio_project_service
-        self.subtitle_watcher = None
+        # self.subtitle_watcher = None
         self.project_watcher = None
         self.project_view = project_view
 
@@ -130,8 +130,12 @@ class ProjectController:
         self.project_view = ProjectView()
 
         self.file_service = FileService()
-        self.subtitle_watcher = SubtitleWatcher(self.subtitle_project_service)
+        # self.subtitle_watcher = SubtitleWatcher(self.subtitle_project_service)
         self.project_watcher = ProjectWatcher(self.subtitle_project_service, self.studio_project_service)
+        self.project_watcher.load_watch_arguments(
+            allow_incremental_updating=True,
+            allow_multiprocessing=True,
+        )
 
     @spacing
     def info(self):
@@ -147,9 +151,12 @@ class ProjectController:
 
     def activate(self):
         # continuously compose
-        self.subtitle_project_service.validate()
-        self.subtitle_watcher.load_watch_arguments(allow_incremental_updating=True, allow_multiprocessing=True)
-        self.subtitle_watcher.watch()
+        self.project_watcher.pass_sync(self.sync)
+        self.project_watcher.watch()
+
+        # self.subtitle_project_service.validate()
+        # self.subtitle_watcher.load_watch_arguments(allow_incremental_updating=True, allow_multiprocessing=True)
+        # self.subtitle_watcher.watch()
 
     def clear(self):
         # clear outputs and metadata
@@ -252,7 +259,6 @@ class ProjectController:
         previous_state = self.subtitle_sync_state
         new_sync_state = self.studio_project_service.sync_subtitle_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.subtitle_sync_state = new_sync_state
-        self._pull_captures()
 
     def sync(self):
         if self.current_project is None:
