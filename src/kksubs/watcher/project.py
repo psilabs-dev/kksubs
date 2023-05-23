@@ -9,7 +9,6 @@ class ProjectWatcher(SubtitleWatcher):
     
     def __init__(self, subtitle_project_service: SubtitleProjectService, studio_project_service: StudioProjectService):
         super().__init__(subtitle_project_service)
-        print(studio_project_service.to_game_capture_path())
         self.watch_files([
             studio_project_service.to_game_capture_path()
         ])
