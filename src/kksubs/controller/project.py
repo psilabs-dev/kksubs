@@ -153,7 +153,13 @@ class ProjectController:
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
         self.list_projects(pattern='*', limit=10)
-        print(f'--- KKSUBS (working on \"{self.current_project}\") ---')
+
+        current_project = self.current_project
+        if self.studio_project_service.is_project(current_project):
+            print(f'--- KKSUBS (working on \"{self.current_project}\") ---')
+        else:
+            self._unassign()
+            print('--- KKSUBS (no project assigned) ---')
 
     def compose(self):
         self.subtitle_project_service.validate()
