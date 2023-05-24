@@ -3,12 +3,7 @@ import logging
 from PIL import ImageColor
 from typing import List, Optional
 
-# object ops
-def coalesce(*args):
-    for arg in args:
-        if arg is not None:
-            return arg
-    return None
+from kksubs.utils.coalesce import coalesce
 
 logger = logging.getLogger(__name__)
 

@@ -1,101 +1,133 @@
-# commands
-> Documentation for some terminal commands in `kksubs`.
+# command line tool
 
-## Create a project
-Create a `kksubs` project in an empty directory. This will turn the directory into a project, adding the `images`, `drafts` and `output` directory, and add an empty draft in the `drafts` directory.
-```console
-$ kksubs-compose --new-project
-```
-Specify a location using the `-p` flag.
-```console
-$ kksubs-compose -p path/to/project --new-project
-```
-If an `images` directory has been populated, the program will correspondingly create a populated draft.
+Command line tools.
 
-## Add and remove subtitles
+* `kkp`: for subtitling images and general project management in an integrated environment.
+* `kksubs`: for only subtitling images.
 
-Add subtitles from `draft.txt` using the `kksubs-compose` command.
+# KK Projects/`kkp`
 
-```console
-$ kksubs-compose -d draft.txt
+`kkp` is a subtitling/project management tool for Koikatsu projects. Requires prior configuration to run successfully.
+
+## Initialize
+```bash
+kkp --workspace [workspace] --game [game-directory] --library [library-directory]
 ```
-Specify project path using the `--project` or `-p` flag.
-```console
-$ kksubs-compose -p path/to/project -d draft.txt
+Initializes the `kksubs` project. Configuration lives in `kksubs.yaml` file.
+
+The `[game-directory]` is the game directory which contains the `UserData` folder. The `[workspace]` is the folder where subtitle-related objects go (e.g. `images`, `output`, `drafts`, `styles.yml`).
+
+---
+## Create Project
+```bash
+kkp create [project-name]
 ```
-Run the following to apply subtitles from all drafts.
-```console
-$ kksubs-compose
+Makes a copy of `UserData` in the game directory into the library, and also copies the renders in `UserData/cap` to `[workspace]/images`. This is known as the "current project". Additionally, creates a `kksubs` subtitling project:
 ```
-Add a `--prefix` to add a prefix.
-```console
-$ kksubs-compose --prefix "subbed-"
-```
-Use `--start` and `--cap` to control the range of images to subtitle. For example, to subtitle the first 20 images after the image at index 15 (note: indices start at 0):
-```console
-$ kksubs-compose -d draft.txt --cap 20 --start 15
+- [workspace]
+    - images
+        - # the captures from the game directory's UserData/cap
+    - drafts
+    - output
+    - styles.yml
 ```
 
-Clear/remove all subtitled images in the output directory using the `--clear` or `-c` flag.
-```console
-$ kksubs-compose --clear
+## List Projects
+```bash
+kkp list -p [pattern]
+# [0] project-1
+# [1] project-2
+# ...
 ```
-Clear a specific directory, such as `output/draft`.
-```console
-$ kksubs-compose --clear -d draft
+List valid projects found in the `[library]`. The list can be filtered with a pattern using wildcards.
+
+## Synchronize
+Saves and synchronizes files between the `[game]`, `[library]`, and `[workspace]`. In arrows (one-way and two-way sync resp.):
+
 ```
-Force clear a directory without a confirmation step.
-```console
-$ kksubs-compose -cf
+[game]/UserData <==> [library]/[current-project]/UserData
+[library]/[current-project]/UserData/cap ==> [workspace]/images
+
+[workspace]/drafts <==> [library]/[current-project]/kksubs-project/drafts
+[workspace]/output <==> [library]/[current-project]/kksubs-project/output
+[workspace]/styles.yml <==> [library]/[current-project]/kksubs-project/styles.yml
 ```
 
-## Renaming images
-Use the `kksubs-rename` command to rename/standardize images in the `images` directory, and apply the filename changes to every draft in the `drafts` directory.
+## Checkout Project
+```bash
+kkp checkout [project-name]
+```
+Change the current project to another project in the library. This replaces the game directory's `UserData` with the one found under `[library]/[project-name]`. This also replaces the items in the subtitle workspace with the ones found under `[library]/[project-name]/kksubs-project`.
 
-Suppose the image directory looks like this:
+Checkout to a new project from the current one like git. (This will create a project in the same directory as the current project.)
+```bash
+kkp checkout [project-name] --branch
 ```
-- charastudio-render-1.png
-- charastudio-render-2.png
-- charastudio-render-3.png
-```
-And the `draft.txt` file is empty. Running
-```console
-$ kksubs-rename
-```
-will rename the images to
-```
-- 1.png
-- 2.png
-- 3.png
-```
-and populate the `draft.txt` draft with empty subtitles:
-```
-image_id: 1.png
-
-image_id: 2.png
-
-image_id: 3.png
+Combine `list` and `checkout` to checkout based on numbers.
+```bash
+kkp list -p *world*
+# [0] hello/world
+kkp checkout 0
+# checkout project hello/world
 ```
 
-## Optimization: multiprocessing and incremental updating
-Multiprocessing is enabled by default to accelerate the subtitling process across multiple CPU cores. To disable multiprocessing, run
-```console
-$ kksubs-compose --disable-processing
+## Delete Project
+```bash
+kkp delete [project-name]
 ```
-Incremental updating is a feature which tells the program to only update subtitles that have been changed. Factors involved include changes in the draft, changes in `styles.yml`, or changes in the images directory. This forms a "snapshot" which is then compared with the next time you run `kksubs-compose`. This will accelerate subtitling, especially if you have hundreds of images and only changed a few lines.
+Delete project with name `[project-name]` from the library.
 
-Incremental updating relies on the `pickle` library to serialize/deserialize objects, which can be insecure. Ensure that the `.kksubs` directory does not contain untrusted files.
+If the current project is to be deleted, the contents of the workspace will be deleted too.
 
-This is a personally developed feature and can be buggy, so it is not enabled by default. To enable incremental updating, use the `--incremental-update` flag.
-
-```console
-$ kksubs-compose --incremental-update
+## Compose/Activate
+```bash
+kkp compose
 ```
-
-## Run kksubs as a continuous process
-You can run `kksubs` as a continuous process, so you may focus working on editing subtitles and viewing results. This is done with the `--watch` flag.
-```console
-$ kksubs-compose --watch
+Create subtitled images once. The images are saved in the `output` directory.
+```bash
+kkp activate
 ```
-This sets up a project watcher, which keeps "watch" of the drafts and images directory, and also the `styles.yml` file if there exists one. When a change is detected in these watch targets, the watcher will trigger a request to subtitle the images. This process occurs once per second.
+Continuously watch the `[workspace]` and `[game]/UserData/cap` for changes, and applies two actions as observed files change:
 
+1. runs `kkp sync`
+2. runs `kkp compoose`
+
+Furthermore, uses incremental updating to process only images whose image, subtitle or style has changed, accelerating the subtitling process. 
+
+Persistent data used to accelerate subtitling is stored in the `[workspace]/.kksubs` directory. This is not necessary to add subtitles, but enables incremental updating.
+
+## Clear 
+```bash
+kksubs clear
+```
+Delete outputs and the `.kksubs` directory within the workspace.
+
+# KK Subtitles/`kksubs`
+`kksubs` is exclusively a subtitling tool. Does not require prior configuration, nor a game directory. Separate from `kkp`.
+
+## Initialize Subtitle Project
+```bash
+kksubs --project [project-directory] init
+```
+Create a blank subtitling project with structure
+```
+- images
+- drafts
+- output
+- styles.yml
+```
+Does not override existing project structure. Defaults to current directory.
+
+## Rename
+```bash
+kksubs --project [project-directory] rename
+```
+Renames the images in the `images` directory. Also renames the image keys in any draft.
+
+## Activate/Compose/Clear
+```
+kksubs --project [project-directory] compose
+kksubs --project [project-directory] activate
+kksubs --project [project-directory] clear
+```
+Like `kkp`, `kksubs` is also equipped with `compose`, `activate` and `clear` commands, which serve the same purpose. Since there is no game directory, `activate` will not search for changes there.

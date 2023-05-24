@@ -1,6 +1,6 @@
 from typing import Dict, List
 import unittest
-from kksubs.data import BoxData, Style, Subtitle, TextData
+from kksubs.data.subtitle import BoxData, Style, Subtitle, TextData
 
 from kksubs.service.extractors import extract_subtitles, is_valid_nested_attribute
 

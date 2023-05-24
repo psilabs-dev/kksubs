@@ -3,7 +3,7 @@ import re
 from typing import Dict, List, Set
 from copy import deepcopy
 
-from kksubs.data import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, TextData
+from kksubs.data.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, TextData
 
 # parsing/extraction, filtering, standardization
 logger = logging.getLogger(__name__)

@@ -9,11 +9,12 @@ import time
 
 import pickle
 
-from kksubs.data import Style, Subtitle, SubtitleGroup
+from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
+from kksubs.exceptions import InvalidProjectException
 
 from kksubs.service.extractors import extract_styles, extract_subtitles
-from kksubs.service.renamer import rename_images, update_images_in_textpath
 from kksubs.service.subtitle import add_subtitles_to_image
+from kksubs.utils.renamer import rename_images, update_images_in_textpath
 
 logger = logging.getLogger(__name__)
 
@@ -44,70 +45,94 @@ def add_subtitle_process(
 # project preparation layer.
 # folder/file logic, obtain read data, deserialization
 
-class InvalidProjectException(FileNotFoundError):
-    "Project does not have a necessary directory to perform kksubs operations."
-    def __init__(self, project_directory):
-        self.project_directory = project_directory
-
-class Project:
-    def __init__(self, project_directory:str=None, create=None):
+class SubtitleProjectService:
+    def __init__(
+            self, project_directory:str=None,
+            metadata_directory:str=None,
+            state_directory:str=None,
+            images_dir:str=None,
+            drafts_dir:str=None,
+            outputs_dir:str=None,
+            styles_path:str=None,
+    ):
         if project_directory is None:
             project_directory = "."
-        if create is None:
-            create = False
+        # if create is None:
+        #     create = False
 
-        self.project_directory = os.path.realpath(project_directory)
-        self.metadata_directory = os.path.join(self.project_directory, ".kksubs")
-        self.state_directory = os.path.join(self.metadata_directory, "state")
-        self.images_dir = os.path.realpath(os.path.join(project_directory, "images"))
-        self.drafts_dir = os.path.realpath(os.path.join(project_directory, "drafts"))
-        self.outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
-        self.styles_path = os.path.realpath(os.path.join(self.project_directory, "styles.yml"))
+        project_directory = os.path.realpath(project_directory)
+        if metadata_directory is None:
+            metadata_directory = os.path.join(project_directory, ".kksubs")
+        if state_directory is None:
+            state_directory = os.path.join(metadata_directory, 'state')
+        if images_dir is None:
+            images_dir = os.path.realpath(os.path.join(project_directory, "images"))
+        if drafts_dir is None:
+            drafts_dir = os.path.realpath(os.path.join(project_directory, "drafts"))
+        if outputs_dir is None:
+            outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
+        if styles_path is None:
+            styles_path = os.path.realpath(os.path.join(project_directory, "styles.yml"))
 
-        if create:            
-            if not os.path.exists(self.project_directory):
-                raise FileNotFoundError
-            changes_made = False
+        self.project_directory = project_directory
+        self.metadata_directory = metadata_directory
+        self.state_directory = state_directory
+        self.images_dir = images_dir
+        self.drafts_dir = drafts_dir
+        self.outputs_dir = outputs_dir
+        self.styles_path = styles_path
 
-            if not os.path.exists(self.images_dir):
-                os.makedirs(self.images_dir)
-                changes_made = True
-                logger.info("Created new images directory.")
-            else:
-                logger.info("Image directory already exists.")
-            if not os.path.exists(self.drafts_dir):
-                os.makedirs(self.drafts_dir)
-                changes_made = True
-                logger.info("Created new drafts directory.")
-                with open(os.path.join(self.drafts_dir, "draft.txt"), "w") as writer:
-                    writer.write("")
-                logger.info("Created an empty draft.")
-                self.rename_images()
-            else:
-                logger.info("Drafts directory already exists.")
-            if not os.path.exists(self.outputs_dir):
-                os.makedirs(self.outputs_dir)
-                changes_made = True
-                logger.info("Created new outputs directory.")
-            else:
-                logger.info("Outputs directory already exists.")
-            if not os.path.exists(self.styles_path):
-                # create a template styles file. TODO: create template online and make download request.
-                with open(self.styles_path, "w") as writer:
-                    writer.write("")
-                changes_made = True
-                logger.info("Created a styles file.")
-            else:
-                logger.info("Styles file already exists.")
-            
-            if changes_made:
-                logger.info("Successfully created a project directory.")
-            else:
-                logger.info("No changes were made to the project.")
+        # if create:
+        #     self.create()
 
+    def validate(self):
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
             raise InvalidProjectException(self.project_directory)
         
+    def create(self):
+        # creates the necessary objects that constitute a kksubs project.
+        if not os.path.exists(self.project_directory):
+            raise FileNotFoundError
+        changes_made = False
+
+        if not os.path.exists(self.images_dir):
+            os.makedirs(self.images_dir)
+            changes_made = True
+            logger.info("Created new images directory.")
+        else:
+            logger.info("Image directory already exists.")
+        if not os.path.exists(self.drafts_dir):
+            os.makedirs(self.drafts_dir)
+            changes_made = True
+            logger.info("Created new drafts directory.")
+            with open(os.path.join(self.drafts_dir, "draft.txt"), "w") as writer:
+                writer.write("")
+            logger.info("Created an empty draft.")
+            # self.rename_images()
+            sorted_image_paths = sorted(self.get_image_paths())
+            self.update_drafts(sorted_image_paths, sorted_image_paths)
+        else:
+            logger.info("Drafts directory already exists.")
+        if not os.path.exists(self.outputs_dir):
+            os.makedirs(self.outputs_dir)
+            changes_made = True
+            logger.info("Created new outputs directory.")
+        else:
+            logger.info("Outputs directory already exists.")
+        if not os.path.exists(self.styles_path):
+            # create a template styles file. TODO: create template online and make download request.
+            with open(self.styles_path, "w") as writer:
+                writer.write("")
+            changes_made = True
+            logger.info("Created a styles file.")
+        else:
+            logger.info("Styles file already exists.")
+        
+        if changes_made:
+            logger.info("Successfully created a project directory.")
+        else:
+            logger.info("No changes were made to the project.")
+
     def get_state_path(self, draft_name:str):
         # draft name without extension.
         return os.path.join(self.state_directory, draft_name)
@@ -121,6 +146,22 @@ class Project:
     def get_image_paths(self):
         return list(map(lambda image: os.path.join(self.images_dir, image), filter(lambda file: os.path.isfile(os.path.join(self.images_dir, file)) and os.path.splitext(file)[1] in {".png"} ,os.listdir(self.images_dir))))
 
+    def update_drafts(self, image_paths, new_image_paths):
+        # replaces old image paths with new image paths for all drafts.
+        # to get an empty draft with image paths, use same image paths for both arguments.
+
+        text_paths = self.get_draft_paths()
+        for text_path in text_paths:
+            text_id = os.path.basename(text_path)
+            extension = os.path.splitext(text_path)[1]
+            if extension != ".txt":
+                logger.warning(f"File type for {text_id} not supported, skipping.")
+                # raise TypeError(f"File must be text file, not {extension}.")
+                continue
+            
+            text_path = os.path.join(self.drafts_dir, text_id)
+            update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
+
     def rename_images(self, padding_length=None, start_at=None, prefix=None, suffix=None):
         # Perform image renaming so it is structured and in alphabetical order.
         if prefix is None:
@@ -130,7 +171,7 @@ class Project:
 
         image_paths = self.get_image_paths()
         image_paths.sort()
-        text_paths = self.get_draft_paths()
+        # text_paths = self.get_draft_paths()
 
         n = len(image_paths)
         input_image_directory = self.images_dir
@@ -143,16 +184,17 @@ class Project:
         new_image_paths = rename_images(image_paths, input_image_directory, padding_length=padding_length, start_at=start_at, prefix=prefix, suffix=suffix)
         logger.info(f"Renamed {n} images in directory {input_image_directory}.")
 
-        for text_path in text_paths:
-            text_id = os.path.basename(text_path)
-            extension = os.path.splitext(text_path)[1]
-            if extension != ".txt":
-                logger.warning(f"File type for {text_id} not supported, skipping.")
-                # raise TypeError(f"File must be text file, not {extension}.")
-                continue
+        self.update_drafts(image_paths, new_image_paths)
+        # for text_path in text_paths:
+        #     text_id = os.path.basename(text_path)
+        #     extension = os.path.splitext(text_path)[1]
+        #     if extension != ".txt":
+        #         logger.warning(f"File type for {text_id} not supported, skipping.")
+        #         # raise TypeError(f"File must be text file, not {extension}.")
+        #         continue
             
-            text_path = os.path.join(self.drafts_dir, text_id)
-            update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
+        #     text_path = os.path.join(self.drafts_dir, text_id)
+        #     update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
 
     pass
 
@@ -394,3 +436,11 @@ class Project:
                 os.remove(draft_state)
         return 0
     
+    def delete_project(self):
+        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.metadata_directory, self.styles_path]:
+            if not os.path.exists(path):
+                continue
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            if os.path.isfile(path):
+                os.remove(path)
