@@ -124,6 +124,28 @@ content: This is some text
 ```
 For more information on what styles can be customized, see [style fields](#style-fields) or the code file at `src\kksubs\data.py`.
 
+### Hide and Sep
+Hide or separate images using `hide:` and `sep:`
+
+```
+image: 1.png
+hide:
+
+image: 2.png
+content: first copy of 2.png
+sep:
+content: second copy of 2.png
+
+image: 3.png
+
+```
+Result in the outputs:
+```
+- 2-1.png
+- 2-2.png
+- 3.png
+```
+
 ## The `styles.yml` file
 
 To get a more automated process of styling subtitles, you use a `styles.yml` file. The `styles.yml` file stores a list of commonly used styles, which are applied to subtitles by referring to their ID as a header. For example, one can store a custom style as follows:
