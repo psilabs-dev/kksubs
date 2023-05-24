@@ -207,13 +207,12 @@ def extract_subtitle_groups(
             continue
 
         # add subtitles.
-        subtitle_group = SubtitleGroup(subtitles=list())
         image_block_split = image_block.split("\n", 1)
         image_id = image_block_split[0].strip()
 
-        subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix)
-
         if len(image_block_split) == 1:
+            subtitle_group = SubtitleGroup(subtitles=list())
+            subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix)
             subtitle_group.subtitles.append(Subtitle([], style=Style.get_default().corrected()))
             subtitle_groups = [subtitle_group]
 
@@ -224,8 +223,15 @@ def extract_subtitle_groups(
             if any(map(lambda i:'hide:' in lines, lines)):
                 continue
 
-            subtitle_group.subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)
-            subtitle_groups = [subtitle_group]
+            # sep implementation
+            image_block_seps = image_block_split[1].split('sep:')
+            print(image_block_seps)
+
+            for i, sep in enumerate(image_block_seps):
+                subtitle_group = SubtitleGroup(subtitles=list())
+                subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix, suffix=f'_{i}')
+                subtitle_group.subtitles = extract_subtitles_from_image_block(sep, content_keys, styles)
+                subtitle_groups.append(subtitle_group)
 
         subtitle_groups_by_image_id[image_id] = subtitle_groups
 

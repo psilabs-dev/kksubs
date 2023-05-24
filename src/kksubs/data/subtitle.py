@@ -571,10 +571,14 @@ class SubtitleGroup(RepresentableData):
         self.output_image_path = output_image_path
         self.subtitles = subtitles
 
-    def complete_path_info(self, draft_id:str, image_id:str, image_dir:str, output_dir:str, prefix:str=None):
+    def complete_path_info(self, draft_id:str, image_id:str, image_dir:str, output_dir:str, prefix:str=None, suffix:str=None):
         if prefix is None:
             prefix = ""
-        self.image_id = image_id
+        if suffix is None:
+            suffix = ""
+
+        image_name, extension = os.path.splitext(image_id)
+        self.image_id = prefix + image_name + suffix + extension
         self.input_image_path = os.path.join(image_dir, image_id)
         self.image_modified_time = os.path.getmtime(self.input_image_path)
-        self.output_image_path = os.path.join(output_dir, draft_id, prefix + image_id)
+        self.output_image_path = os.path.join(output_dir, draft_id, prefix + image_name + suffix + extension)
