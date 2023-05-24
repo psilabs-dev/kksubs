@@ -198,7 +198,7 @@ class SubtitleProjectService:
 
     pass
 
-    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=False, update_drafts=False):
+    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=False, update_drafts=True):
         if allow_multiprocessing is None:
             allow_multiprocessing = True
         if allow_incremental_updating is None:
