@@ -191,7 +191,7 @@ def extract_subtitle_groups(
     logger.info(f"Extracting subtitle groups.")
 
     # subtitles = dict()
-    subtitle_groups:Dict[str, List[SubtitleGroup]] = dict()
+    subtitle_groups_by_image_id:Dict[str, List[SubtitleGroup]] = dict()
     content_keys = {"content"}.union(styles.keys())
     # remove comments
     draft_body = "\n".join(list(filter(lambda line:not line.startswith("#"), draft_body.split("\n"))))
@@ -200,8 +200,9 @@ def extract_subtitle_groups(
     image_blocks = draft_body.split("image_id:")
 
     for image_block in image_blocks:
-        image_block = image_block.strip()
+        subtitle_groups:List[SubtitleGroup] = list()
 
+        image_block = image_block.strip()
         if not image_block:
             continue
 
@@ -214,15 +215,18 @@ def extract_subtitle_groups(
 
         if len(image_block_split) == 1:
             subtitle_group.subtitles.append(Subtitle([], style=Style.get_default().corrected()))
-            subtitle_groups[image_id] = [subtitle_group]
-            continue
+            subtitle_groups = [subtitle_group]
 
-        subtitle_group.subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)
+        else:
+            
+            # hide implementation
+            lines = image_block_split[1].split('\n')
+            if any(map(lambda i:'hide:' in lines, lines)):
+                continue
 
-        # TODO: hide and split functionality.
-        ...
-        
-        # print(image_subtitles)
-        subtitle_groups[image_id] = [subtitle_group]
-    return subtitle_groups
+            subtitle_group.subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)
+            subtitle_groups = [subtitle_group]
 
+        subtitle_groups_by_image_id[image_id] = subtitle_groups
+
+    return subtitle_groups_by_image_id
