@@ -15,6 +15,8 @@ def add_subtitles(
         allow_incremental_updating:bool=None,
         watch:bool=None,
 ):
+    if project_directory is None:
+        project_directory = '.'
     return SubtitleController(project_directory=project_directory).add_subtitles(
         allow_multiprocessing=allow_multiprocessing,
         allow_incremental_updating=allow_incremental_updating, 

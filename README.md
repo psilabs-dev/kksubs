@@ -57,11 +57,13 @@ Each text file in the `drafts/` directory is called a "draft". A draft contains 
 To apply subtitles from a draft (e.g. `draft1.txt`) to all the images (from the project directory, for example), run the following script:
 ```python
 from kksubs import add_subtitles
-add_subtitles('.', 'draft1.txt')
+
+if __name__ == '__main__':
+    add_subtitles()
 ```
 You can also run this from the command line.
 ```console
-$ kksubs compose -d draft1.txt
+$ kksubs compose
 ```
 See [commands](/src/kksubs/cmd/README.md) for more information.
 
