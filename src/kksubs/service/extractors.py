@@ -3,7 +3,7 @@ import re
 from typing import Dict, List, Set
 from copy import deepcopy
 
-from kksubs.data.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, TextData
+from kksubs.data.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, SubtitleGroup, TextData
 
 # parsing/extraction, filtering, standardization
 logger = logging.getLogger(__name__)
@@ -184,13 +184,15 @@ def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
     
     return styles
 
-def extract_subtitles(draft_body:str, styles:Dict[str, Style]) -> Dict[str, List[Subtitle]]:
-    # extract subtitles from draft
-    logger.info(f"Extracting subtitles.")
+def extract_subtitle_groups(
+        draft_id:str, draft_body:str, styles:Dict[str, Style], image_dir:str, output_dir:str, prefix:str=None
+) -> Dict[str, List[SubtitleGroup]]:
+    # extract subtitle groups from draft
+    logger.info(f"Extracting subtitle groups.")
 
-    subtitles = dict()
+    # subtitles = dict()
+    subtitle_groups:Dict[str, List[SubtitleGroup]] = dict()
     content_keys = {"content"}.union(styles.keys())
-
     # remove comments
     draft_body = "\n".join(list(filter(lambda line:not line.startswith("#"), draft_body.split("\n"))))
 
@@ -204,16 +206,23 @@ def extract_subtitles(draft_body:str, styles:Dict[str, Style]) -> Dict[str, List
             continue
 
         # add subtitles.
+        subtitle_group = SubtitleGroup(subtitles=list())
         image_block_split = image_block.split("\n", 1)
         image_id = image_block_split[0].strip()
 
+        subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix)
+
         if len(image_block_split) == 1:
-            subtitles[image_id] = [Subtitle([], style=Style.get_default().corrected())]
+            subtitle_group.subtitles.append(Subtitle([], style=Style.get_default().corrected()))
+            subtitle_groups[image_id] = [subtitle_group]
             continue
 
-        image_subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)
+        subtitle_group.subtitles = extract_subtitles_from_image_block(image_block_split[1], content_keys, styles)
+
+        # TODO: hide and split functionality.
+        ...
         
         # print(image_subtitles)
-        subtitles[image_id] = image_subtitles
-    
-    return subtitles
+        subtitle_groups[image_id] = [subtitle_group]
+    return subtitle_groups
+

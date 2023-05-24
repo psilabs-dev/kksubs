@@ -1,5 +1,6 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 import logging
+import os
 from PIL import ImageColor
 from typing import List, Optional
 
@@ -53,16 +54,19 @@ def to_string(value) -> Optional[str]:
         return value
     raise TypeError(type(value))
 
-class BaseData(ABC):
-    field_name:str
+class RepresentableData(ABC):
 
     def __repr__(self) -> str:
         return str(self.__dict__)
+
     def __eq__(self, __value: object) -> bool:
         if __value is None:
             return False
         return self.__dict__ == __value.__dict__
-    
+
+class BaseData(RepresentableData):
+    field_name:str
+
     @abstractclassmethod
     def get_default(cls):
         ...
@@ -550,28 +554,27 @@ class Style(BaseData):
 
     pass
 
-class Subtitle:
+class Subtitle(RepresentableData):
 
     def __init__(self, content:List[str]=None, style:Style=None):
         self.content = content
         self.style = style
         pass
 
-    def __repr__(self) -> str:
-        return str(self.__dict__)
-    def __eq__(self, __value: object) -> bool:
-        return self.__dict__ == __value.__dict__
+class SubtitleGroup(RepresentableData):
 
-class SubtitleGroup:
-
-    def __init__(self, input_image_path:str=None, image_modified_time=None, output_image_path:str=None, subtitles:List[Subtitle]=None):
+    def __init__(self, image_id:str=None, input_image_path:str=None, image_modified_time=None, output_image_path:str=None, subtitles:List[Subtitle]=None):
         
+        self.image_id = image_id
         self.input_image_path = input_image_path
         self.image_modified_time = image_modified_time
         self.output_image_path = output_image_path
         self.subtitles = subtitles
-        
-    def __repr__(self) -> str:
-        return str(self.__dict__)
-    def __eq__(self, __value: object) -> bool:
-        return self.__dict__ == __value.__dict__
+
+    def complete_path_info(self, draft_id:str, image_id:str, image_dir:str, output_dir:str, prefix:str=None):
+        if prefix is None:
+            prefix = ""
+        self.image_id = image_id
+        self.input_image_path = os.path.join(image_dir, image_id)
+        self.image_modified_time = os.path.getmtime(self.input_image_path)
+        self.output_image_path = os.path.join(output_dir, draft_id, prefix + image_id)

@@ -45,7 +45,7 @@ class SubtitleController:
                 drafts=drafts, prefix=prefix,
                 allow_multiprocessing=allow_multiprocessing, allow_incremental_updating=allow_incremental_updating
             )
-            self.watcher.watch()
+            return self.watcher.watch()
 
         return self.service.add_subtitles(
             drafts=drafts, prefix=prefix, 
