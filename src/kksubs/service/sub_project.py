@@ -486,7 +486,7 @@ class SubtitleProjectService:
 
             # search for metadata related to the draft.
             draft_state = self.get_state_path(draft_name)
-            print(draft_state)
+            # print(draft_state)
             if os.path.exists(draft_state):
                 logger.info("Deleting previous draft states from .kksubs file.")
                 os.remove(draft_state)
