@@ -334,8 +334,12 @@ class SubtitleProjectService:
         
         # remove images in output that are not in input.
         images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
-        for image_to_remove in images_to_remove_from_output:
-            os.remove(os.path.join(draft_output_dir, image_to_remove))
+        
+        if images_to_remove_from_output:
+            for image_to_remove in images_to_remove_from_output:
+                remove_path = os.path.join(draft_output_dir, image_to_remove)
+                os.remove(remove_path)
+            logger.info(f'Deleted images {images_to_remove_from_output}.')
 
         # extract styles and subtitles.
         # subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)

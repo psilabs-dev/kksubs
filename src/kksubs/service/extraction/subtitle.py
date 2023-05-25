@@ -192,12 +192,17 @@ def extract_subtitle_groups(
 
             # sep implementation
             image_block_seps = image_block_split[1].split('sep:')
-
-            for i, sep in enumerate(image_block_seps):
+            if len(image_block_seps) <= 1:
                 subtitle_group = SubtitleGroup(subtitles=list())
-                subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix, suffix=f'_{i}')
-                subtitle_group.subtitles = _extract_subtitles_from_image_block(sep, content_keys, styles)
+                subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir)
+                subtitle_group.subtitles = _extract_subtitles_from_image_block(image_block_seps[0], content_keys, styles)
                 subtitle_groups.append(subtitle_group)
+            else:
+                for i, sep in enumerate(image_block_seps):
+                    subtitle_group = SubtitleGroup(subtitles=list())
+                    subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix, suffix=f'_{i}')
+                    subtitle_group.subtitles = _extract_subtitles_from_image_block(sep, content_keys, styles)
+                    subtitle_groups.append(subtitle_group)
 
         subtitle_groups_by_image_id[image_id] = subtitle_groups
 
