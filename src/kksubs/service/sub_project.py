@@ -1,6 +1,7 @@
 import os
 import logging
 import shutil
+import traceback
 from PIL import Image
 from typing import Dict, List
 import yaml
@@ -244,9 +245,25 @@ class SubtitleProjectService:
             logger.info("No previous state for this draft is found.")
             previous_draft_state:Dict[str, SubtitleGroup] = dict()
         else:
+
+            delete_state_path = False
             with open(state_path, "rb") as reader:
                 logger.info(f"Reading previous state from {state_path}")
-                previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+                try:
+                    previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+                except AttributeError:
+                    logger.error(f"""
+An attribute error occurred while reading previous state path.
+This usually indicates that the state path is written by an outdated program.
+The program will now delete the previous state and try again...
+
+Original error message: {traceback.format_exc()} 
+                    """)
+                    previous_draft_state = dict()
+                    delete_state_path = True
+
+            if delete_state_path:
+                os.remove(state_path)
 
         # check image deltas
         # for indeterminate sets, check for two things:
