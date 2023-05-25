@@ -169,12 +169,14 @@ class ContextLayer(Layer):
 
 class StyleRow(Layer):
 
-    def __init__(self, styles:List[Style]=None):
+    def __init__(self, styles:List[Style]=None, context:ContextLayer=None):
         if styles is None:
             styles = list()
+        if context is None:
+            context = ContextLayer()
         
         self.styles = styles
-        self.context = ContextLayer()
+        self.context = context
 
     def add_context(self, context:ContextLayer):
         self.context = context
@@ -185,7 +187,7 @@ class StyleRow(Layer):
             return self
 
         projection_list = style_row.styles
-        row = StyleRow(styles=style_row.styles + self.styles)
+        row = StyleRow(styles=style_row.styles + self.styles, context=self.context)
 
         for style in self.styles:
             for projector in projection_list:
