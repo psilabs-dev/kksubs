@@ -142,12 +142,58 @@ class Style(BaseData):
 
     pass
 
-class StyleRow(RepresentableData):
-    def __init__(self, styles:List[Style]=None):
+class Layer(RepresentableData, ABC):
+    # an abstract indexed element of a matrix.
+    ...
+
+class ContextLayer(Layer):
+
+    def __init__(
+            self,
+            delimiter:str=None,
+    ):
+        if delimiter is None:
+            delimiter = '-'
+        self.delimiter = delimiter
+
+    @classmethod
+    def from_dict(cls, context_dict):
+        return ContextLayer(**context_dict)
+
+    def project(self, projector:Style, style:Style):
+        projected_style = deepcopy(style)
+        projected_style_id = projected_style.style_id
+        projected_style.inherit(projector)
+        projected_style.style_id = f'{projected_style_id}{self.delimiter}{projector.style_id}'
+        return projected_style
+
+class StyleRow(Layer):
+
+    def __init__(self, styles:List[Style]=None, context:ContextLayer=None):
         if styles is None:
             styles = list()
+        if context is None:
+            context = ContextLayer()
         
         self.styles = styles
+        self.context = context
+
+    def add_context(self, context:ContextLayer):
+        self.context = context
+
+    def action(self, style_row:"StyleRow"=None) -> "StyleRow":
+        # self act on other based on some "context".
+        if style_row is None:
+            return self
+
+        projection_list = style_row.styles
+        row = StyleRow(styles=style_row.styles + self.styles, context=self.context)
+
+        for style in self.styles:
+            for projector in projection_list:
+                row.styles.append(style_row.context.project(projector, style))
+        
+        return row
 
 class StyleMatrix(RepresentableData):
     def __init__(self, rows:List[StyleRow]=None):
@@ -158,27 +204,17 @@ class StyleMatrix(RepresentableData):
     def add_row(self, row:StyleRow):
         self.rows.append(row)
 
-    def _project_styles_to_row(self, row:StyleRow, projection_list:List[Style], delimiter:str) -> List[Style]:
-        dom_style_list:List[Style] = list()
-
-        for style in row.styles:
-            dom_style_list.append(style)
-            for projector in projection_list:
-                projected_style = deepcopy(style)
-                projected_style_id = projected_style.style_id
-                projected_style.inherit(projector)
-                projected_style.style_id = f'{projected_style_id}{delimiter}{projector.style_id}'
-                dom_style_list.append(projected_style)
-            
-        return dom_style_list
+    def add_context(self, context:ContextLayer):
+        if self.rows:
+            self.rows[-1].add_context(context)
 
     def out(self, delimiter=None) -> List[Style]:
         if delimiter is None:
             delimiter = '-'
 
-        projection_list:List[Style] = list()
-
+        output_row:StyleRow = None
         for row in self.rows:
-            projection_list += self._project_styles_to_row(row, projection_list, delimiter)
+            if isinstance(row, StyleRow):
+                output_row = row.action(output_row)
 
-        return projection_list
+        return output_row.styles

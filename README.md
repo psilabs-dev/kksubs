@@ -216,8 +216,12 @@ Instead of a regular style object, we have a *matrix* to express inheritance.
 
 # matrix inheritance
 - matrix:
-  - - style_id: style-1
-  - - style_id: style-2
+  - row:
+      styles:
+      - style_id: style-1
+  - row:
+      styles:
+      - style_id: style-2
 ```
 ### Example
 
@@ -228,12 +232,16 @@ Using a 'matrix' format, configure more styles quickly:
 # styles.yml
 - matrix:
   # first row
-  - - style_id: style-1
-    - style_id: style-2
+  - row:
+      styles:
+      - style_id: style-1
+      - style_id: style-2
   # second row
-  - - style_id: style-3
-    - style_id: style-4
-    - style_id: style-5
+  - row:
+      styles:
+      - style_id: style-3
+      - style_id: style-4
+      - style_id: style-5
 ```
 The matrix contains 2 *rows*, the first with styles 1 and 2, and the second with styles 3-5. Multiple rows of arbitrary lengths can be composed together.
 
@@ -276,8 +284,11 @@ Several common rows are built-in. For example, the `grid4` configurations
 are represented by the `grid4_complete` row ID.
 ```yaml
 - matrix:
-  - row: grid4_complete
-  - - style_id: character
+  - row: 
+      row_id: grid4_complete
+  - row:
+      styles:
+      - style_id: character
 ```
 
 ---

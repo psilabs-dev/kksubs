@@ -34,30 +34,39 @@ def _process_single_style(style_data:Dict, styles:Dict[str, Style]):
     styles[style.style_id] = style
     return
 
+def _process_layer_data(layer_data, matrix:StyleMatrix) -> Layer:
+    layer:Layer
+    if not isinstance(layer_data, dict):
+        raise TypeError(layer_data, type(layer_data))
+    
+    is_row = 'row' in layer_data
+    is_context = 'context' in layer_data
+
+    if is_row:
+        row_data = layer_data.get('row')
+        row_id = row_data.get('row_id')
+        style_data_list = row_data.get('styles')
+        if row_id is not None:
+            layer = STYLE_ROW_ENUM.get(row_id)
+        elif style_data_list is not None and len(style_data_list) > 0:
+            style_list = list(map(Style.from_dict, style_data_list))
+            layer = StyleRow(styles=style_list)
+        matrix.add_row(layer)
+        
+    elif is_context:
+        layer:ContextLayer = ContextLayer.from_dict(layer_data.get('context'))
+        matrix.add_context(layer)
+
+    else:
+        raise TypeError(layer_data, type(layer_data))
+
 def _process_matrix(style_data:Dict, styles:Dict[str, Style]):
 
     matrix = StyleMatrix()
-    row_data_list:List[Union[str, List[Dict]]] = style_data.get('matrix')
+    layer_data_list:List[Union[str, List[Dict]]] = style_data.get('matrix')
     
-    for row_data in row_data_list:
-        row:StyleRow
-
-        if isinstance(row_data, dict):
-            row_id = row_data.get('row')
-            row = STYLE_ROW_ENUM.get(row_id)
-            if row is None:
-                logger.error(f'Row ID {row_id} is not a valid id.')
-                continue
-        elif isinstance(row_data, list):
-            # is a list of styles.
-            row = StyleRow()
-            for style_data in row_data:
-                style = Style.from_dict(style_data)
-                row.styles.append(style)
-        else:
-            raise TypeError(row_data, type(row_data))
-        
-        matrix.add_row(row)
+    for layer_data in layer_data_list:
+        _process_layer_data(layer_data, matrix)
         
     for style in matrix.out():
         styles[style.style_id] = style
@@ -84,4 +93,5 @@ def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
     for style_data in styles_contents:
         _process_entity(style_data, styles)
     
+    logger.info(f'Obtained styles {styles.keys()}.')
     return styles
