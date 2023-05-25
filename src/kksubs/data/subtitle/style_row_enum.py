@@ -11,7 +11,7 @@ for i in range(4):
 grid10_complete:List[Style] = list()
 for i in range(10):
     for j in range(10):
-        grid10_complete.append(Style(style_id=f"{i}{j}", box_data=BoxData(grid4=[i, j])))
+        grid10_complete.append(Style(style_id=f"{i}{j}", box_data=BoxData(grid10=[i, j])))
 
 # list of rows
 class STYLE_ROW_ENUM(Enum):
