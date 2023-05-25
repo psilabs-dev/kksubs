@@ -331,15 +331,6 @@ class SubtitleProjectService:
         if not os.path.exists(draft_output_dir):
             logger.info(f"Output directory for draft {draft_name} not found, making one.")
             os.makedirs(draft_output_dir, exist_ok=True)
-        
-        # remove images in output that are not in input.
-        images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
-        
-        if images_to_remove_from_output:
-            for image_to_remove in images_to_remove_from_output:
-                remove_path = os.path.join(draft_output_dir, image_to_remove)
-                os.remove(remove_path)
-            logger.info(f'Deleted images {images_to_remove_from_output}.')
 
         # extract styles and subtitles.
         # subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
@@ -379,6 +370,13 @@ class SubtitleProjectService:
             for _image_id in subtitle_groups_by_image_id_dict 
             for _subtitle_group in subtitle_groups_by_image_id_dict[_image_id]
         }
+        
+        # remove images from output
+        output_images_to_delete = list(set(os.listdir(draft_output_dir)).difference(subtitle_group_by_image_id.keys()))
+        if output_images_to_delete:
+            for image in output_images_to_delete:
+                os.remove(os.path.join(draft_output_dir, image))
+            logger.info(f'Removed images {output_images_to_delete}')
 
         # incremental updating (subtitle group)
         filtered_subtitle_groups_by_image_id = subtitle_group_by_image_id
