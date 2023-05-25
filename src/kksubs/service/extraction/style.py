@@ -43,17 +43,14 @@ def _process_matrix(style_data:Dict, styles:Dict[str, Style]):
         row:StyleRow
 
         if isinstance(row_data, dict):
-            row_id = row_data.get('row')
-            row = STYLE_ROW_ENUM.get(row_id)
-            if row is None:
-                logger.error(f'Row ID {row_id} is not a valid id.')
+            row_id = row_data.get('row_id')
+            style_data_list = row_data.get('styles')
+            if row_id is not None:
+                row = STYLE_ROW_ENUM.get(row_id)
                 continue
-        elif isinstance(row_data, list):
-            # is a list of styles.
-            row = StyleRow()
-            for style_data in row_data:
-                style = Style.from_dict(style_data)
-                row.styles.append(style)
+            if style_data_list is not None and len(style_data_list) > 0:
+                style_list = list(map(Style.from_dict, style_data_list))
+                row = StyleRow(styles=style_list)
         else:
             raise TypeError(row_data, type(row_data))
         
