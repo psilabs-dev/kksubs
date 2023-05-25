@@ -1,7 +1,8 @@
 import unittest
-from kksubs.data.subtitle import BoxData, Style, TextData
+from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.subtitle.style import Style
 
-from kksubs.service.extractors import extract_styles
+from kksubs.service.extraction.style import extract_styles
 
 class TestExtractStyles(unittest.TestCase):
 
