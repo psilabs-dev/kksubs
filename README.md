@@ -14,6 +14,7 @@
 1. The `styles.yml` file
     1. Style Inheritance
     1. Default Styles
+    1. Multiple Inheritance
 1. Appendix
     1. Style Fields
 
@@ -199,6 +200,85 @@ The style of a subtitle is determined at three levels, in decreasing overriding 
 - factory default style (always exists)
 
 The "factory" style is applied in the absence of any styling from the user side, in the draft or `styles.yml`.
+
+## Multiple Inheritance
+
+> Note: experimental and subject to change.
+
+As discussed previously, inheritance is used to automate the configuration of styles.
+
+Instead of a regular style object, we have a *matrix* to express inheritance.
+```yaml
+# normal inheritance
+- style_id: style-1
+- style_id: style-2
+- style_id: style-2-style-1(style-2, style-1)
+
+# matrix inheritance
+- matrix:
+  - - style_id: style-1
+  - - style_id: style-2
+```
+### Example
+
+Using a 'matrix' format, configure more styles quickly:
+
+
+```yaml
+# styles.yml
+- matrix:
+  # first row
+  - - style_id: style-1
+    - style_id: style-2
+  # second row
+  - - style_id: style-3
+    - style_id: style-4
+    - style_id: style-5
+```
+The matrix contains 2 *rows*, the first with styles 1 and 2, and the second with styles 3-5. Multiple rows of arbitrary lengths can be composed together.
+
+```yaml
+- matrix:
+  - row-1
+  - row-2
+  - ...
+  - row-n
+```
+
+When `kksubs` compiles the styles folder, it will also multiply each row of styles together, where multiplication is style inheritance. Since order matters for inheritance, it also matters which row goes first.
+
+The above is the same as adding the following 11 styles by hand:
+```yaml
+- style_id: style-1
+- style_id: style-2
+- ...
+- style_id: style-5
+- style_id: style-3-style-1(style-3, style-1)
+- style_id: style-3-style-2(style-3, style-2)
+- style_id: style-4-style-1(style-4, style-1)
+- ...
+- style_id: style-5-style-1(style-5, style-1)
+- style_id: style-5-style-2(style-5, style-2)
+```
+Several common rows are built-in. For example, the `grid4` configurations
+```yaml
+- style_id: "00"
+  box_data:
+    grid4: [0, 0]
+- style_id: "01"
+  box_data:
+    grid4: [0, 1]
+- ...
+- style_id: "44"
+  box_data:
+    grid4: [4, 4]
+```
+are represented by the `grid4_complete` row ID.
+```yaml
+- matrix:
+  - row: grid4_complete
+  - - style_id: character
+```
 
 ---
 # Appendix
