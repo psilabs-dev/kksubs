@@ -217,11 +217,11 @@ Instead of a regular style object, we have a *matrix* to express inheritance.
 # matrix inheritance
 - matrix:
   - row:
-    styles:
-    - style_id: style-1
+      styles:
+      - style_id: style-1
   - row:
-    styles:
-    - style_id: style-2
+      styles:
+      - style_id: style-2
 ```
 ### Example
 
@@ -233,15 +233,15 @@ Using a 'matrix' format, configure more styles quickly:
 - matrix:
   # first row
   - row:
-    styles:
-    - style_id: style-1
-    - style_id: style-2
+      styles:
+      - style_id: style-1
+      - style_id: style-2
   # second row
   - row:
-    styles:
-    - style_id: style-3
-    - style_id: style-4
-    - style_id: style-5
+      styles:
+      - style_id: style-3
+      - style_id: style-4
+      - style_id: style-5
 ```
 The matrix contains 2 *rows*, the first with styles 1 and 2, and the second with styles 3-5. Multiple rows of arbitrary lengths can be composed together.
 
@@ -285,10 +285,10 @@ are represented by the `grid4_complete` row ID.
 ```yaml
 - matrix:
   - row: 
-    row_id: grid4_complete
+      row_id: grid4_complete
   - row:
-    styles:
-    - style_id: character
+      styles:
+      - style_id: character
 ```
 
 ---
