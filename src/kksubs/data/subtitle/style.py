@@ -1,4 +1,4 @@
-from copy import copy
+from copy import deepcopy
 from typing import List
 
 from kksubs.data.subtitle.style_attributes import *
@@ -164,7 +164,7 @@ class StyleMatrix(RepresentableData):
         for style in row.styles:
             dom_style_list.append(style)
             for projector in projection_list:
-                projected_style = copy(style)
+                projected_style = deepcopy(style)
                 projected_style_id = projected_style.style_id
                 projected_style.inherit(projector)
                 projected_style.style_id = f'{projected_style_id}{delimiter}{projector.style_id}'
@@ -180,8 +180,5 @@ class StyleMatrix(RepresentableData):
 
         for row in self.rows:
             projection_list += self._project_styles_to_row(row, projection_list, delimiter)
-
-        # for id in (list(map(lambda s:s.style_id, projection_list))):
-        #     print(id)
 
         return projection_list
