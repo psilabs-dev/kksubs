@@ -12,11 +12,32 @@ import pickle
 from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
 from kksubs.exceptions import InvalidProjectException
 
-from kksubs.service.extractors import extract_styles, extract_subtitles
+from kksubs.service.extractors import extract_styles, extract_subtitle_groups
 from kksubs.service.subtitle import add_subtitles_to_image
 from kksubs.utils.renamer import rename_images, update_images_in_textpath
 
 logger = logging.getLogger(__name__)
+
+def add_subtitle_group_process(
+        i,
+        subtitle_group:SubtitleGroup,
+        project_directory:str,
+        num_of_images:int
+):
+    image_path = subtitle_group.input_image_path
+    image = Image.open(image_path)
+
+    subtitles = subtitle_group.subtitles
+    if subtitles is not None:
+        subtitled_image = add_subtitles_to_image(image, subtitles, project_directory)
+    else:
+        # probably shouldn't happen.
+        subtitled_image = image
+    
+    save_path = subtitle_group.output_image_path
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    subtitled_image.save(save_path)
+    logger.info(f"Added subtitles to image {i+1}/{num_of_images}.")
 
 def add_subtitle_process(
         i, 
@@ -143,8 +164,14 @@ class SubtitleProjectService:
     def get_draft_ids(self):
         return list(filter(lambda draft:os.path.splitext(draft)[1] in {".txt"}, os.listdir(self.drafts_dir)))
 
+    def filter_images(self, file_list):
+        return list(map(lambda image: os.path.join(file_list, image), filter(lambda file: os.path.isfile(os.path.join(file_list, file)) and os.path.splitext(file)[1] in {".png"} ,os.listdir(file_list))))
+
     def get_image_paths(self):
-        return list(map(lambda image: os.path.join(self.images_dir, image), filter(lambda file: os.path.isfile(os.path.join(self.images_dir, file)) and os.path.splitext(file)[1] in {".png"} ,os.listdir(self.images_dir))))
+        return self.filter_images(self.images_dir)
+
+    def get_output_paths(self, draft_id:str):
+        return self.filter_images(os.path.join(self.outputs_dir, draft_id))
 
     def update_drafts(self, image_paths, new_image_paths):
         # replaces old image paths with new image paths for all drafts.
@@ -196,9 +223,185 @@ class SubtitleProjectService:
         #     text_path = os.path.join(self.drafts_dir, text_id)
         #     update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
 
-    pass
+    def incremental_update(self, draft_name:str, subtitle_group_by_image_id:Dict[str, SubtitleGroup]) -> Dict[str, SubtitleGroup]:
+        # filter subgroup dict by incremental update
+        draft_output_dir = os.path.join(self.outputs_dir, draft_name)
+        draft_id = os.path.splitext(draft_name)[0]
+        # print(draft_output_dir)
 
-    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=False, update_drafts=True):
+        filtered_subtitle_group_by_image_id:Dict[str, SubtitleGroup] = dict()
+        state_path = self.get_state_path(draft_name)
+
+        if not os.path.exists(self.metadata_directory):
+            logger.info(f"Creating additional data directory.")
+            os.mkdir(self.metadata_directory)
+        if not os.path.exists(self.state_directory):
+            logger.info(f"Creating states directory.")
+            os.mkdir(self.state_directory)
+        if not os.path.exists(state_path):
+            logger.info("No previous state for this draft is found.")
+            previous_draft_state:Dict[str, SubtitleGroup] = dict()
+        else:
+            with open(state_path, "rb") as reader:
+                logger.info(f"Reading previous state from {state_path}")
+                previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+
+        # check image deltas
+        # for indeterminate sets, check for two things:
+        # 1) if curr subtitle group != previous subtitle group.
+        # 2) if image is updated i.e. image.mtime > previous.mtime.
+
+        curr_image_ids = set(subtitle_group_by_image_id.keys())
+        prev_image_ids = set(previous_draft_state.keys())
+        out_image_ids = set(map(os.path.basename, self.get_output_paths(draft_id)))
+
+        d1 = curr_image_ids.intersection(prev_image_ids).intersection(out_image_ids) # indeterminate (1, 2)
+        
+        d2 = curr_image_ids.intersection(prev_image_ids).difference(out_image_ids) # add subtitle.
+        d3 = curr_image_ids.intersection(out_image_ids).difference(prev_image_ids) # indeterminate (1)
+        d4 = prev_image_ids.intersection(out_image_ids).difference(curr_image_ids) # delete output image.
+
+        d5 = curr_image_ids.difference(prev_image_ids).difference(out_image_ids) # add subtitle.
+        d6 = prev_image_ids.difference(curr_image_ids).difference(out_image_ids) # do nothing.
+        d7 = out_image_ids.difference(curr_image_ids).difference(prev_image_ids) # delete output image.
+
+        # print(d1, d2, d3, d4, d5, d6, d7)
+
+        for image_id in d1:
+            subtitle_group = subtitle_group_by_image_id[image_id]
+            previous_subtitle_group = previous_draft_state[image_id]
+            if subtitle_group != previous_subtitle_group:
+                filtered_subtitle_group_by_image_id[image_id] = subtitle_group_by_image_id[image_id]
+                continue
+            image_mtime = subtitle_group.image_modified_time
+            output_mtime = os.path.getmtime(subtitle_group.output_image_path)
+            if image_mtime > output_mtime:
+                filtered_subtitle_group_by_image_id[image_id] = subtitle_group_by_image_id[image_id]
+
+        for image_id in d3:
+            subtitle_group = subtitle_group_by_image_id[image_id]
+            image_mtime = subtitle_group.image_modified_time
+            output_mtime = os.path.getmtime(subtitle_group.output_image_path)
+            if image_mtime > output_mtime:
+                filtered_subtitle_group_by_image_id[image_id] = subtitle_group_by_image_id[image_id]
+
+        for image_id in d4.union(d7):
+            output_image_path = os.path.join(draft_output_dir, image_id)
+            if os.path.exists(output_image_path):
+                os.remove(output_image_path)
+
+        for image_id in d2.union(d5):
+            filtered_subtitle_group_by_image_id[image_id] = subtitle_group_by_image_id[image_id]
+
+        with open(state_path, "wb") as writer:
+            logger.info(f"Saving current subtitle state to {state_path}")
+            pickle.dump(subtitle_group_by_image_id, writer)
+
+        return filtered_subtitle_group_by_image_id
+
+    def add_subtitles_to_draft(
+            self, 
+            draft:str, # draft filename
+            drafts:Dict[str, List[int]], # list of draft filenames and corresponding filtered image indices
+            image_paths, 
+            styles, 
+            update_drafts:bool, prefix,
+            allow_incremental_updating:bool, 
+            allow_multiprocessing:bool
+    ):
+        # get draft by draft id
+        draft_id = os.path.splitext(draft)[0]
+        draft_path = os.path.join(self.drafts_dir, draft)
+        if update_drafts:
+            update_images_in_textpath(draft_path, image_paths, new_image_paths=image_paths)
+
+        image_filters = drafts.get(draft)
+
+        if not os.path.exists(draft_path):
+            raise FileNotFoundError(draft_path)
+        with open(draft_path, "r", encoding="utf-8") as reader:
+            draft_body = reader.read()
+
+        # extract draft data
+        draft_name = os.path.splitext(draft)[0]
+
+        draft_output_dir = os.path.join(self.outputs_dir, draft_name)
+        if not os.path.exists(draft_output_dir):
+            logger.info(f"Output directory for draft {draft_name} not found, making one.")
+            os.makedirs(draft_output_dir, exist_ok=True)
+        
+        # remove images in output that are not in input.
+        images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
+        for image_to_remove in images_to_remove_from_output:
+            os.remove(os.path.join(draft_output_dir, image_to_remove))
+
+        # extract styles and subtitles.
+        # subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
+        subtitle_groups_by_image_id_dict:Dict[str, List[SubtitleGroup]] = extract_subtitle_groups(draft_id, draft_body, styles, self.images_dir, self.outputs_dir, prefix=prefix)
+
+        for image_path in list(subtitle_groups_by_image_id_dict):
+            # validate image paths for each subtitle group.
+            input_image_path = os.path.join(self.images_dir, image_path)
+            if not os.path.exists(input_image_path):
+                logger.warning(f"Image ID {image_path} does not exist but is being referenced. These subtitles will be ignored.")
+                del subtitle_groups_by_image_id_dict[image_path]
+                continue
+
+            subtitle_groups_by_image_id = subtitle_groups_by_image_id_dict.get(image_path)
+            # validate fonts
+            for group in subtitle_groups_by_image_id:
+                for subtitle in group.subtitles:
+                    try:
+                        font = subtitle.style.text_data.font
+                        if font != "default" and not os.path.exists(font):
+                            subtitle.style.text_data.font = os.path.join(
+                                self.project_directory, font
+                            )
+                    except AttributeError(f'Font does not exist for a subtitle for {image_path}.'): # font does not exist.
+                        continue
+
+        # apply subtitles to image with filter.
+        if image_filters is None:
+            filtered_image_paths = image_paths
+        else:
+            filtered_image_paths = list(map(lambda j:image_paths[j], filter(lambda i:i < len(image_paths), image_filters)))
+        logger.debug(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
+
+        # flattening
+        subtitle_group_by_image_id:Dict[str, SubtitleGroup] = {
+            _subtitle_group.image_id:_subtitle_group 
+            for _image_id in subtitle_groups_by_image_id_dict 
+            for _subtitle_group in subtitle_groups_by_image_id_dict[_image_id]
+        }
+
+        # incremental updating (subtitle group)
+        filtered_subtitle_groups_by_image_id = subtitle_group_by_image_id
+        if allow_incremental_updating:
+            filtered_subtitle_groups_by_image_id = self.incremental_update(draft_name, subtitle_group_by_image_id)
+
+        # logger.debug(f"Obtained subtitles: {subtitles_by_image_id}")
+        logger.debug(f'Obtained subtitle groups: {subtitle_groups_by_image_id_dict}')
+
+        subtitle_groups:List[SubtitleGroup] = list()
+        for image_id in filtered_subtitle_groups_by_image_id:
+            subtitle_groups.append(subtitle_group_by_image_id[image_id])
+
+        num_of_images = len(subtitle_groups)
+        output_image_paths = list(map(os.path.basename, map(lambda group:group.output_image_path, subtitle_groups)))
+        logger.info(f"Will begin subtitling {num_of_images} images: {list(map(os.path.basename, output_image_paths))}")
+
+        start_time = time.time()
+        if allow_multiprocessing:
+            pool = multiprocessing.Pool()
+            pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.project_directory, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
+        else:
+            for i, subtitle_group in enumerate(subtitle_groups):
+                add_subtitle_group_process(i, subtitle_group, self.project_directory, num_of_images)
+        end_time = time.time()
+        logger.info(f'Finished subtitling {num_of_images} images for draft {draft} ({end_time - start_time}s).')
+        return
+
+    def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=None, update_drafts=True):
         if allow_multiprocessing is None:
             allow_multiprocessing = True
         if allow_incremental_updating is None:
@@ -240,156 +443,9 @@ class SubtitleProjectService:
         logger.debug(f"Obtained styles: {styles}")
 
         for draft in drafts:
-            # get draft by draft id
-            draft_path = os.path.join(self.drafts_dir, draft)
-            if update_drafts:
-                update_images_in_textpath(draft_path, image_paths, new_image_paths=image_paths)
-
-            image_filters = drafts.get(draft)
-
-            if not os.path.exists(draft_path):
-                raise FileNotFoundError(draft_path)
-            with open(draft_path, "r", encoding="utf-8") as reader:
-                draft_body = reader.read()
-
-            # extract draft data
-            draft_name = os.path.splitext(draft)[0]
-
-            draft_output_dir = os.path.join(self.outputs_dir, draft_name)
-            if not os.path.exists(draft_output_dir):
-                logger.info(f"Output directory for draft {draft_name} not found, making one.")
-                os.makedirs(draft_output_dir, exist_ok=True)
-            
-            # remove images in output that are not in input.
-            images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
-            for image_to_remove in images_to_remove_from_output:
-                os.remove(os.path.join(draft_output_dir, image_to_remove))
-
-            # extract styles and subtitles.
-            subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
-
-            
-            for image_id in list(subtitles_by_image_id):
-                # validate image paths for each subtitle.
-                image_path = os.path.join(self.images_dir, image_id)
-                if not os.path.exists(image_path):
-                    logger.warning(f"Image ID {image_id} does not exist but is being referenced by subtitle. This subtitle will be ignored.")
-                    del subtitles_by_image_id[image_id]
-                    continue
-
-                # TODO: project directory burden switched to subtitles, delete this.
-                # validate subtitle font
-                subtitles = subtitles_by_image_id.get(image_id)
-                for subtitle in subtitles:
-                    try:
-                        font = subtitle.style.text_data.font
-                        if font != "default" and not os.path.exists(font):
-                            subtitle.style.text_data.font = os.path.join(
-                                self.project_directory, font
-                            )
-                    except AttributeError: # font does not exist.
-                        continue
-
-            # apply subtitles to image with filter.
-            if image_filters is None:
-                filtered_image_paths = image_paths
-            else:
-                filtered_image_paths = list(map(lambda j:image_paths[j], filter(lambda i:i < len(image_paths), image_filters)))
-            logger.debug(f"Got filtered image paths (basename): {list(map(os.path.basename, filtered_image_paths))}")
-
-            # incremental updating
-            if allow_incremental_updating:
-                filtered_updated_paths = list()
-                subtitle_group_state_path = self.get_state_path(draft_name)
-
-                if not os.path.exists(self.metadata_directory):
-                    logger.info(f"Creating additional data directory.")
-                    os.mkdir(self.metadata_directory)
-                if not os.path.exists(self.state_directory):
-                    logger.info(f"Creating states directory.")
-                    os.mkdir(self.state_directory)
-                if not os.path.exists(subtitle_group_state_path):
-                    logger.info("No previous state for this draft is found.")
-                    previous_draft_state:Dict[str, SubtitleGroup] = dict()
-                else:
-                    with open(subtitle_group_state_path, "rb") as reader:
-                        logger.info(f"Reading previous state from {subtitle_group_state_path}")
-                        previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
-
-                # save subtitles as image.
-                current_draft_state:Dict[str, SubtitleGroup] = {
-                    image_id:SubtitleGroup(
-                        input_image_path=os.path.join(self.images_dir, image_id),
-                        image_modified_time=os.path.getmtime(os.path.join(self.images_dir, image_id)), 
-                        output_image_path=os.path.join(draft_output_dir, image_id),
-                        subtitles=subtitles_by_image_id[image_id],
-                    ) for image_id in subtitles_by_image_id
-                }
-
-                # check image deltas
-                curr_draft_image_ids = set(current_draft_state.keys())
-                previous_draft_image_ids = set(previous_draft_state.keys())
-
-                curr_draft_new_images = curr_draft_image_ids.difference(previous_draft_image_ids)
-                curr_draft_deleted_images = previous_draft_image_ids.difference(curr_draft_image_ids)
-                curr_draft_indeterminate = curr_draft_image_ids.intersection(previous_draft_image_ids)
-                # add subtitles to new images and delete subtitles from deleted images
-
-                for image_path in filtered_image_paths:
-                    image_id = os.path.basename(image_path)
-                    if image_id not in os.listdir(draft_output_dir):
-                        logger.info(f"Found image {image_id} not in output, adding.")
-                        filtered_updated_paths.append(image_path)
-                        continue
-                    if image_id in curr_draft_new_images:
-                        logger.info(f"New image detected, adding to subtitle queue: {image_id}")
-                        filtered_updated_paths.append(image_path)
-                        continue
-                    if image_id in curr_draft_deleted_images:
-                        # delete output image logic here here.
-                        if os.path.exists(os.path.join(draft_output_dir, image_id)):
-                            logger.info(f"Removing image {image_id}")
-                            os.remove(os.path.join(draft_output_dir, image_id))
-                        continue
-                    if image_id in curr_draft_indeterminate:
-                        previous_image_state:SubtitleGroup = previous_draft_state.get(image_id)
-                        current_image_state:SubtitleGroup = current_draft_state.get(image_id)
-                        if previous_image_state != current_image_state:
-                            logger.info(f"Changes detected for image {image_id}")
-                            filtered_updated_paths.append(image_path)
-                            continue
-                        else:
-                            logger.debug(f"No updates to image {image_id}: skipping.")
-                            continue
-                    if image_id not in curr_draft_image_ids:
-                        logger.error(f"Image ID {image_id} not found in the draft.")
-                        filtered_updated_paths.append(image_path)
-                        continue
-                    else:
-                        logger.error("An unexpected situation occurred.")
-                
-                filtered_image_paths = filtered_updated_paths
-
-                with open(subtitle_group_state_path, "wb") as writer:
-                    logger.info(f"Saving current subtitle state to {subtitle_group_state_path}")
-                    pickle.dump(current_draft_state, writer)
-
-            logger.debug(f"Obtained subtitles: {subtitles_by_image_id}")
-
-            num_of_images = len(filtered_image_paths)
-            logger.info(f"Will begin subtitling {num_of_images} images: {list(map(os.path.basename, filtered_image_paths))}")
-
-            # subtitle images.
-            start_time = time.time()
-            if allow_multiprocessing:
-                pool = multiprocessing.Pool()
-                pool.starmap(add_subtitle_process, [(i, image_path, self.project_directory, subtitles_by_image_id, draft_output_dir, prefix, num_of_images) for i, image_path in enumerate(filtered_image_paths)])
-            else:
-                for i, image_path in enumerate(filtered_image_paths):
-                    add_subtitle_process(i, image_path, self.project_directory, subtitles_by_image_id, draft_output_dir, prefix, num_of_images)
-            runtime = time.time() - start_time
-
-            logger.info(f"Finished subtitling {num_of_images} images for draft {draft} ({runtime}s)")
+            self.add_subtitles_to_draft(
+                draft, drafts, image_paths, styles, update_drafts, prefix, allow_incremental_updating, allow_multiprocessing
+            )
 
         return 0
     
