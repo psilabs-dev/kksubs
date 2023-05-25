@@ -2,7 +2,9 @@ import os
 from typing import List
 from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 
-from kksubs.data.subtitle import OutlineData, Subtitle
+from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.subtitle.subtitle import Subtitle
+# from kksubs.data.subtitle.subtitle import OutlineData, Subtitle
 from kksubs.service.processor.motion_blur import apply_motion_blur
 from kksubs.service.processor.apply_text import create_text_layer
 

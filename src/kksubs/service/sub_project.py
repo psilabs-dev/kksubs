@@ -9,10 +9,12 @@ import time
 
 import pickle
 
-from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
+from kksubs.data.subtitle.style import Style
+from kksubs.data.subtitle.subtitle import SubtitleGroup
 from kksubs.exceptions import InvalidProjectException
 
-from kksubs.service.extractors import extract_styles, extract_subtitle_groups
+from kksubs.service.extraction.subtitle import extract_subtitle_groups
+from kksubs.service.extraction.style import extract_styles
 from kksubs.service.subtitle import add_subtitles_to_image
 from kksubs.utils.renamer import rename_images, update_images_in_textpath
 
@@ -486,7 +488,6 @@ class SubtitleProjectService:
 
             # search for metadata related to the draft.
             draft_state = self.get_state_path(draft_name)
-            # print(draft_state)
             if os.path.exists(draft_state):
                 logger.info("Deleting previous draft states from .kksubs file.")
                 os.remove(draft_state)
