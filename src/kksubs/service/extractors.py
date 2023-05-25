@@ -225,7 +225,6 @@ def extract_subtitle_groups(
 
             # sep implementation
             image_block_seps = image_block_split[1].split('sep:')
-            print(image_block_seps)
 
             for i, sep in enumerate(image_block_seps):
                 subtitle_group = SubtitleGroup(subtitles=list())
