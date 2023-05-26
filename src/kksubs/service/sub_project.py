@@ -1,6 +1,7 @@
 import os
 import logging
 import shutil
+import traceback
 from PIL import Image
 from typing import Dict, List
 import yaml
@@ -9,10 +10,12 @@ import time
 
 import pickle
 
-from kksubs.data.subtitle import Style, Subtitle, SubtitleGroup
+from kksubs.data.subtitle.style import Style
+from kksubs.data.subtitle.subtitle import SubtitleGroup
 from kksubs.exceptions import InvalidProjectException
 
-from kksubs.service.extractors import extract_styles, extract_subtitle_groups
+from kksubs.service.extraction.subtitle import extract_subtitle_groups
+from kksubs.service.extraction.style import extract_styles
 from kksubs.service.subtitle import add_subtitles_to_image
 from kksubs.utils.renamer import rename_images, update_images_in_textpath
 
@@ -242,9 +245,25 @@ class SubtitleProjectService:
             logger.info("No previous state for this draft is found.")
             previous_draft_state:Dict[str, SubtitleGroup] = dict()
         else:
+
+            delete_state_path = False
             with open(state_path, "rb") as reader:
                 logger.info(f"Reading previous state from {state_path}")
-                previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+                try:
+                    previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+                except AttributeError:
+                    logger.error(f"""
+An attribute error occurred while reading previous state path.
+This usually indicates that the state path is written by an outdated program.
+The program will now delete the previous state and try again...
+
+Original error message: {traceback.format_exc()} 
+                    """)
+                    previous_draft_state = dict()
+                    delete_state_path = True
+
+            if delete_state_path:
+                os.remove(state_path)
 
         # check image deltas
         # for indeterminate sets, check for two things:
@@ -329,11 +348,6 @@ class SubtitleProjectService:
         if not os.path.exists(draft_output_dir):
             logger.info(f"Output directory for draft {draft_name} not found, making one.")
             os.makedirs(draft_output_dir, exist_ok=True)
-        
-        # remove images in output that are not in input.
-        images_to_remove_from_output = list(set(os.listdir(draft_output_dir)).difference(set(list(map(os.path.basename, image_paths)))))
-        for image_to_remove in images_to_remove_from_output:
-            os.remove(os.path.join(draft_output_dir, image_to_remove))
 
         # extract styles and subtitles.
         # subtitles_by_image_id:Dict[str, List[Subtitle]] = extract_subtitles(draft_body, styles)
@@ -373,6 +387,13 @@ class SubtitleProjectService:
             for _image_id in subtitle_groups_by_image_id_dict 
             for _subtitle_group in subtitle_groups_by_image_id_dict[_image_id]
         }
+        
+        # remove images from output
+        output_images_to_delete = list(set(os.listdir(draft_output_dir)).difference(subtitle_group_by_image_id.keys()))
+        if output_images_to_delete:
+            for image in output_images_to_delete:
+                os.remove(os.path.join(draft_output_dir, image))
+            logger.info(f'Removed images {output_images_to_delete}')
 
         # incremental updating (subtitle group)
         filtered_subtitle_groups_by_image_id = subtitle_group_by_image_id
@@ -486,7 +507,6 @@ class SubtitleProjectService:
 
             # search for metadata related to the draft.
             draft_state = self.get_state_path(draft_name)
-            # print(draft_state)
             if os.path.exists(draft_state):
                 logger.info("Deleting previous draft states from .kksubs file.")
                 os.remove(draft_state)

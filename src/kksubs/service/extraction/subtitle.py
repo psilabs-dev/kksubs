@@ -1,9 +1,11 @@
 import logging
-import re
 from typing import Dict, List, Set
 from copy import deepcopy
 
-from kksubs.data.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, SubtitleGroup, TextData
+from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.subtitle.style import Style
+from kksubs.data.subtitle.subtitle import Subtitle, SubtitleGroup
+# from kksubs.data.subtitle.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, SubtitleGroup, TextData
 
 # parsing/extraction, filtering, standardization
 logger = logging.getLogger(__name__)
@@ -16,25 +18,18 @@ default_style_by_field_name:Dict[str, BaseData] = {
     ]
 }
 
-def get_inherited_style_ids(input_style_id) -> List[str]:
-    # returns parent profile ID or None.
-    match = re.search(r'\((.*?)\)', input_style_id)
-    if match:
-        return list(map(lambda grp: grp.strip(), match.group(1).split(",")))
-    return []
-
-def is_valid_nested_attribute(style:BaseData, nested_attribute:str) -> bool:
+def _is_valid_nested_attribute(style:BaseData, nested_attribute:str) -> bool:
     attributes = nested_attribute.split(".")
     if len(attributes) == 1:
         return hasattr(style, attributes[0])
     
     # check if attribute corresponds to a style.
     if attributes[0] in default_style_by_field_name.keys():
-        return is_valid_nested_attribute(default_style_by_field_name[attributes[0]](), ".".join(attributes[1:]))
+        return _is_valid_nested_attribute(default_style_by_field_name[attributes[0]](), ".".join(attributes[1:]))
     
     raise KeyError(style.field_name, nested_attribute)
 
-def give_attributes_to_style(base_style:Style, attributes:List[str], value):
+def _give_attributes_to_style(base_style:Style, attributes:List[str], value):
     # print(attributes, type(base_style))
     
     if len(attributes) == 1:
@@ -42,9 +37,9 @@ def give_attributes_to_style(base_style:Style, attributes:List[str], value):
     
     if getattr(base_style, attributes[0]) is None:
         setattr(base_style, attributes[0], default_style_by_field_name[attributes[0]]())
-    return give_attributes_to_style(getattr(base_style, attributes[0]), attributes[1:], value)
+    return _give_attributes_to_style(getattr(base_style, attributes[0]), attributes[1:], value)
 
-def add_data_to_style(line:str, subtitle:Subtitle, styles:Dict[str, Style]):
+def _add_data_to_style(line:str, subtitle:Subtitle, styles:Dict[str, Style]):
     # adds data to style.
 
     key, value = line.split(":", 1)
@@ -56,11 +51,11 @@ def add_data_to_style(line:str, subtitle:Subtitle, styles:Dict[str, Style]):
     
     else:
         attributes = key.split(".")
-        give_attributes_to_style(subtitle.style, attributes, value)
+        _give_attributes_to_style(subtitle.style, attributes, value)
 
     pass
 
-def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], styles:Dict[str, Style]) -> List[Subtitle]:
+def _extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], styles:Dict[str, Style]) -> List[Subtitle]:
     
     subtitles:List[Subtitle] = []
     lines = textstring.strip().split("\n")
@@ -75,7 +70,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
         # print(line, line.split(":", 1))
         if len(line.split(":", 1)) == 2:
             # print("ping")
-            return is_valid_nested_attribute(default_style_by_field_name["style"](), line.split(":")[0])
+            return _is_valid_nested_attribute(default_style_by_field_name["style"](), line.split(":")[0])
         return False
         # return any(line.startswith(key+":") for key in style_keys)
     
@@ -136,7 +131,7 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
         # style logic
         if in_style_environment:
             if has_style_key:
-                add_data_to_style(line, subtitle, styles)
+                _add_data_to_style(line, subtitle, styles)
             pass
 
         # print(
@@ -155,34 +150,6 @@ def extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], st
     # print(lines)
     # print(subtitles)
     return subtitles
-
-def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
-
-    styles = dict()
-    logger.debug(f"Extracting styles from {styles_contents}.")
-    if not styles_contents:
-        return styles
-    
-    for style_dict in styles_contents:
-        style = Style.from_dict(style_dict=style_dict)
-
-        # style inheritance logic.
-        parent_style_ids = get_inherited_style_ids(style.style_id)
-        for parent_style_id in parent_style_ids:
-            if parent_style_id not in styles.keys():
-                logger.error(f"Style ID {parent_style_id} not found.")
-                continue
-            parent_style = styles.get(parent_style_id)
-            style.coalesce(parent_style)
-        style.style_id = style.style_id.split("(")[0]
-
-        if style.style_id in styles.keys():
-            logger.warning(f"Style ID conflict: {style.style_id} already in styles; skipping.")
-            continue
-        styles[style.style_id] = style
-        pass
-    
-    return styles
 
 def extract_subtitle_groups(
         draft_id:str, draft_body:str, styles:Dict[str, Style], image_dir:str, output_dir:str, prefix:str=None
@@ -225,12 +192,17 @@ def extract_subtitle_groups(
 
             # sep implementation
             image_block_seps = image_block_split[1].split('sep:')
-
-            for i, sep in enumerate(image_block_seps):
+            if len(image_block_seps) <= 1:
                 subtitle_group = SubtitleGroup(subtitles=list())
-                subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix, suffix=f'_{i}')
-                subtitle_group.subtitles = extract_subtitles_from_image_block(sep, content_keys, styles)
+                subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir)
+                subtitle_group.subtitles = _extract_subtitles_from_image_block(image_block_seps[0], content_keys, styles)
                 subtitle_groups.append(subtitle_group)
+            else:
+                for i, sep in enumerate(image_block_seps):
+                    subtitle_group = SubtitleGroup(subtitles=list())
+                    subtitle_group.complete_path_info(draft_id, image_id, image_dir, output_dir, prefix=prefix, suffix=f'_{i}')
+                    subtitle_group.subtitles = _extract_subtitles_from_image_block(sep, content_keys, styles)
+                    subtitle_groups.append(subtitle_group)
 
         subtitle_groups_by_image_id[image_id] = subtitle_groups
 
