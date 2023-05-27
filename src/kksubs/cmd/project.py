@@ -27,6 +27,7 @@ def command_line():
     subparsers = parser.add_subparsers(dest='command')
 
     compose_parser = subparsers.add_parser('compose', help='Compose subtitles once.')
+    compose_parser.add_argument('--incremental-update', action='store_true', help='Allow incremental update.')
 
     activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
 
@@ -68,7 +69,7 @@ def command_line():
 
     # START SUBTITLE COMMANDS
     if command == 'compose':
-        controller.compose()
+        controller.compose(incremental_update=args.incremental_update)
 
     if command == 'activate':
         controller.activate()

@@ -161,9 +161,9 @@ class ProjectController:
             self._unassign()
             print('--- KKSUBS (no project assigned) ---')
 
-    def compose(self):
+    def compose(self, incremental_update:bool=None):
         self.subtitle_project_service.validate()
-        self.subtitle_project_service.add_subtitles(allow_incremental_updating=True, update_drafts=True)
+        self.subtitle_project_service.add_subtitles(allow_incremental_updating=incremental_update, update_drafts=True)
 
     def activate(self):
         # continuously compose
