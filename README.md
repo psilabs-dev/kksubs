@@ -19,7 +19,7 @@
     1. Style Fields
 
 ## Installation and Setup
-A Windows OS is required and Python 3.7+ is recommended.
+The program is intended to work on a Windows OS with Python versions 3.8-3.11.
 
 Open a Python virtual environment and install the Git repository. For example:
 ```console

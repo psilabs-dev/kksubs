@@ -33,10 +33,7 @@ def transfer(source:str, destination:str):
     elif os.path.isdir(source):
         if not os.path.exists(destination):
             return
-        try:
-            shutil.copytree(source, destination, copy_function=shutil.copy2, dirs_exist_ok=True)
-        except TypeError:
-            shutil.copytree(source, destination, copy_function=shutil.copy2)
+        shutil.copytree(source, destination, copy_function=shutil.copy2, dirs_exist_ok=True)
         return
 
 def sync_unidirectional(source, destination, filename_filter:List[str]=None):
