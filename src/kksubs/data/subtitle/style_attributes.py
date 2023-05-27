@@ -1,5 +1,5 @@
 from kksubs.data.abstract import *
-from kksubs.utils.coalesce import *
+from common.utils.coalesce import *
 from kksubs.utils.sanitizers import *
 
 class TextData(BaseData):

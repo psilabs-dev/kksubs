@@ -2,7 +2,6 @@ import os
 from kksubs.service.sub_project import SubtitleProjectService
 from typing import Dict, List
 import logging
-from kksubs.watcher.file_change import FileChangeWatcher
 
 from kksubs.watcher.subtitle import SubtitleWatcher
 

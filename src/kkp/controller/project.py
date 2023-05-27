@@ -2,17 +2,16 @@ import logging
 import os
 from typing import List, Optional
 import yaml
-from kksubs.exceptions import InvalidProjectException
+from common.exceptions import InvalidProjectException
 from kksubs.service.file import FileService
-from kksubs.service.studio_project import StudioProjectService
+from kkp.service.studio_project import StudioProjectService
 
 from kksubs.service.sub_project import SubtitleProjectService
-from kksubs.view.project import ProjectView
-from kksubs.watcher.project import ProjectWatcher
-from kksubs.watcher.subtitle import SubtitleWatcher
-from kksubs.utils.coalesce import coalesce
-from kksubs.utils.file import *
-from kksubs.utils.decorators import *
+from kkp.view.project import ProjectView
+from kkp.watcher.project import ProjectWatcher
+from common.utils.coalesce import coalesce
+from common.utils.file import *
+from common.utils.decorators import *
 
 METADATA_FILE = 'kksubs.yaml'
 GAME_DIRECTORY_KEY = 'game-directory'

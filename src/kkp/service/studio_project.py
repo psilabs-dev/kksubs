@@ -6,8 +6,8 @@ import shutil
 import fnmatch
 import time
 
-from kksubs.data.file import Bucket
-from kksubs.exceptions import InvalidProjectException
+from common.data.file import Bucket
+from common.exceptions import InvalidProjectException
 from kksubs.service.file import FileService
 
 logger = logging.getLogger(__name__)

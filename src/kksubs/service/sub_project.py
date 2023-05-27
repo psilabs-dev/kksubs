@@ -12,7 +12,7 @@ import pickle
 
 from kksubs.data.subtitle.style import Style
 from kksubs.data.subtitle.subtitle import SubtitleGroup
-from kksubs.exceptions import InvalidProjectException
+from common.exceptions import InvalidProjectException
 
 from kksubs.service.extraction.subtitle import extract_subtitle_groups
 from kksubs.service.extraction.style import extract_styles

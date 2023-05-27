@@ -5,7 +5,7 @@ from os.path import getmtime
 import shutil
 from typing import Dict, List
 
-from kksubs.data.file import Bucket
+from common.data.file import Bucket
 
 logger = logging.getLogger(__name__)
 

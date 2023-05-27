@@ -1,6 +1,6 @@
 import os
 from typing import Dict, List
-from kksubs.watcher.abstract import AbstractWatcher
+from common.watcher.abstract import AbstractWatcher
 
 class FileChangeWatcher(AbstractWatcher):
 

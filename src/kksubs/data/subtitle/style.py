@@ -1,3 +1,4 @@
+from abc import ABC
 from copy import deepcopy
 from typing import List
 

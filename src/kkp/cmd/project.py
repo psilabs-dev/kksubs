@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from kksubs.controller.project import ProjectController
+from kkp.controller.project import ProjectController
 
 log_levels = {
     "debug": logging.DEBUG,
@@ -57,7 +57,7 @@ def command_line():
 
     get_version = args.version
     if get_version:
-        from kksubs.utils.import_utils import get_kksubs_version
+        from common.import_utils import get_kksubs_version
         print(f'kksubs version {get_kksubs_version()}')
         return
 
