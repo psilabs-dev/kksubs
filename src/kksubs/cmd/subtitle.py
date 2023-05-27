@@ -19,6 +19,7 @@ def command_line():
 
     parser.add_argument('-p', '--project', default='.', help='Specify path to the project.')
     parser.add_argument('--log', default='warning', help='Set logging level.')
+    parser.add_argument('-v', '--version', action='store_true', help='Get kksubs version.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -53,6 +54,12 @@ def command_line():
 
     log_level = 'info' if command == 'activate' else args.log
     logging.basicConfig(level=log_levels.get(log_level))
+
+    get_version:bool = args.version
+    if get_version:
+        from kksubs.utils.import_utils import get_kksubs_version
+        print(f'kksubs version {get_kksubs_version()}')
+        return
 
     if command == 'init':
         controller.create()

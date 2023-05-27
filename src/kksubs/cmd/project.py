@@ -22,6 +22,7 @@ def command_line():
     parser.add_argument('--library', type=str, help='Specify path to library.')
     parser.add_argument('--workspace', type=str, help='Specify location for subtitle workspace.')
     parser.add_argument('--log', type=str, default='warning', help='Set logging level.')
+    parser.add_argument('-v', '--version', action='store_true', help='Get kksubs version.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -53,6 +54,13 @@ def command_line():
     controller = ProjectController()
     log_level = 'info' if command == 'activate' else args.log
     logging.basicConfig(level=log_levels.get(log_level))
+
+    get_version = args.version
+    if get_version:
+        from kksubs.utils.import_utils import get_kksubs_version
+        print(f'kksubs version {get_kksubs_version()}')
+        return
+
     metadata_directory = args.metadata
     game_directory = args.game_directory
     library = args.library
