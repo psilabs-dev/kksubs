@@ -10,7 +10,7 @@ class BaseData(RepresentableData):
         ...
 
     @abstractclassmethod
-    def from_dict(cls, style_dict):
+    def deserialize(cls, style_dict):
         ...
     
     @abstractmethod

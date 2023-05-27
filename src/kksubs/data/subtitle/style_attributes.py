@@ -33,7 +33,7 @@ class TextData(BaseData):
         )
 
     @classmethod
-    def from_dict(cls, text_style_dict=None):
+    def deserialize(cls, text_style_dict=None):
         if text_style_dict is None:
             return TextData()
         return TextData(**text_style_dict)
@@ -85,7 +85,7 @@ class OutlineData(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, outline_dict=None):
+    def deserialize(cls, outline_dict=None):
         if outline_dict is None:
             return None
         return OutlineData(**outline_dict)
@@ -139,7 +139,7 @@ class BoxData(BaseData):
         )
 
     @classmethod
-    def from_dict(cls, box_style_dict=None):
+    def deserialize(cls, box_style_dict=None):
         if box_style_dict is None:
             return BoxData()
         return BoxData(**box_style_dict)
@@ -186,7 +186,7 @@ class Brightness(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, values=None):
+    def deserialize(cls, values=None):
         if values is None:
             return None
         return Brightness(**values)
@@ -218,7 +218,7 @@ class Gaussian(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, values=None):
+    def deserialize(cls, values=None):
         if values is None:
             return None
         return Gaussian(**values)
@@ -253,7 +253,7 @@ class Motion(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, values=None):
+    def deserialize(cls, values=None):
         if values is None:
             return None
         return Motion(**values)
@@ -286,7 +286,7 @@ class Mask(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, path=None):
+    def deserialize(cls, path=None):
         if path is None:
             return None
         return Mask(**path)
@@ -317,7 +317,7 @@ class Background(BaseData):
         )
     
     @classmethod
-    def from_dict(cls, path=None):
+    def deserialize(cls, path=None):
         if path is None:
             return None
         return Background(**path)

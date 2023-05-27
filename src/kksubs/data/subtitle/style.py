@@ -21,6 +21,11 @@ class Style(BaseData):
             mask:Mask=None,
             styles:List["Style"]=None,
     ):
+        if text_data is None:
+            text_data = TextData()
+        if box_data is None:
+            box_data = BoxData()
+
         self.style_id = style_id
         self.text_data = text_data
         self.outline_data = outline_data
@@ -45,21 +50,23 @@ class Style(BaseData):
         )
 
     @classmethod
-    def from_dict(cls, style_dict:dict=None):
+    def deserialize(cls, style_dict:dict=None):
         if style_dict is None:
             return Style()
+        sub_style_datas = style_dict.get('styles')
+        styles:List[Style] = None if sub_style_datas is None else list(map(Style.deserialize, sub_style_datas))
         return Style(
             style_id=style_dict.get("style_id"),
-            text_data=TextData.from_dict(text_style_dict=style_dict.get(TextData.field_name)),
-            outline_data=OutlineData.from_dict(outline_dict=style_dict.get(OutlineData.field_name)),
-            outline_data_1=OutlineData1.from_dict(outline_dict=style_dict.get(OutlineData1.field_name)),
-            box_data=BoxData.from_dict(box_style_dict=style_dict.get(BoxData.field_name)),
-            brightness=Brightness.from_dict(values=style_dict.get(Brightness.field_name)),
-            gaussian=Gaussian.from_dict(values=style_dict.get(Gaussian.field_name)),
-            motion=Motion.from_dict(values=style_dict.get(Motion.field_name)),
-            background=Background.from_dict(path=style_dict.get(Background.field_name)),
-            mask=Background.from_dict(path=style_dict.get(Mask.field_name)),
-            styles=[Style.from_dict(style_dict=sub_style_dict) for sub_style_dict in style_dict.get("styles")] if "styles" in style_dict.keys() else None,
+            text_data=TextData.deserialize(text_style_dict=style_dict.get(TextData.field_name)),
+            outline_data=OutlineData.deserialize(outline_dict=style_dict.get(OutlineData.field_name)),
+            outline_data_1=OutlineData1.deserialize(outline_dict=style_dict.get(OutlineData1.field_name)),
+            box_data=BoxData.deserialize(box_style_dict=style_dict.get(BoxData.field_name)),
+            brightness=Brightness.deserialize(values=style_dict.get(Brightness.field_name)),
+            gaussian=Gaussian.deserialize(values=style_dict.get(Gaussian.field_name)),
+            motion=Motion.deserialize(values=style_dict.get(Motion.field_name)),
+            background=Background.deserialize(path=style_dict.get(Background.field_name)),
+            mask=Background.deserialize(path=style_dict.get(Mask.field_name)),
+            styles=styles,
         )
     
     def coalesce(self, other:"Style", essential=False):
@@ -158,7 +165,7 @@ class ContextLayer(Layer):
         self.delimiter = delimiter
 
     @classmethod
-    def from_dict(cls, context_dict):
+    def deserialize(cls, context_dict):
         return ContextLayer(**context_dict)
 
     def project(self, projector:Style, style:Style):
@@ -178,6 +185,14 @@ class StyleRow(Layer):
         
         self.styles = styles
         self.context = context
+
+    @classmethod
+    def deserialize(self, data):
+        styles_data = data.get('styles')
+        context_data = data.get('context')
+        styles = list(map(Style.deserialize, styles_data)) if styles_data is not None else None
+        context_data = ContextLayer.deserialize(context_data)
+        return StyleRow(styles=styles, context_data=context_data)
 
     def add_context(self, context:ContextLayer):
         self.context = context
