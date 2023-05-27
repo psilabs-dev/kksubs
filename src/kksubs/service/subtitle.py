@@ -77,6 +77,17 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     tb_center_x, tb_center_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=None) # center of rotation.
     tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=nudge)
 
+    background = style.background
+    if background is not None:
+        bg_path = background.path
+        if bg_path is not None:
+            if not os.path.exists(bg_path):
+                bg_path = os.path.join(project_directory, bg_path)
+            if not os.path.exists(bg_path):
+                raise FileNotFoundError(f"Image file {bg_path} cannot be found.")
+            bg_image = Image.open(bg_path)
+            image.paste(bg_image, (0, 0), bg_image)
+
     # apply sub styles
     styles = style.styles
     if styles is not None:
@@ -128,17 +139,6 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
                 image.paste(apply_motion_blur(image, kernel_size, angle), (0, 0), mask_image)
             else:
                 image = apply_motion_blur(image, kernel_size, angle)
-
-    background = style.background
-    if background is not None:
-        bg_path = background.path
-        if bg_path is not None:
-            if not os.path.exists(bg_path):
-                bg_path = os.path.join(project_directory, bg_path)
-            if not os.path.exists(bg_path):
-                raise FileNotFoundError(f"Image file {bg_path} cannot be found.")
-            bg_image = Image.open(bg_path)
-            image.paste(bg_image, (0, 0), bg_image)
 
     # outline data application
     for outline_data in [style.outline_data_1, style.outline_data]:
