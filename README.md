@@ -289,6 +289,17 @@ are represented by the `grid4_complete` row ID.
   - row:
       styles:
       - style_id: character
+# creates styles character-11, character-12, ...,
+```
+The delimiter can be controlled using "context" layers, thereby removing the "`-`" between style IDs.
+```
+  - row: 
+      row_id: grid4_complete
+  - context:
+      delimiter: ''
+  - row:
+      styles:
+      - style_id: character
 ```
 
 ---
