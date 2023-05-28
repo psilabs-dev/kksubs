@@ -170,7 +170,7 @@ class BoxData(BaseData):
         self.rotate = to_integer(self.rotate)
 
 class AssetData(BaseData):
-    field_name = 'asset'
+    field_name = 'asset_data'
 
     def __init__(
             self,
@@ -195,9 +195,9 @@ class AssetData(BaseData):
     def coalesce(self, other:"AssetData"):
         if other is None:
             return
-        self.path = other.path
-        self.rotate = other.rotate
-        self.scale = other.scale
+        self.path = coalesce(self.path, other.path)
+        self.rotate = coalesce(self.rotate, other.rotate)
+        self.scale = coalesce(self.scale, other.scale)
 
     def correct_values(self):
         self.path = to_string(self.path)
