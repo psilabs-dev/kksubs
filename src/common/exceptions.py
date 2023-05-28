@@ -7,3 +7,7 @@ class InvalidProjectException(FileNotFoundError):
 class FolderCollisionException(Exception):
     def __init__(self):
         super().__init__("The library and workspace cannot be assigned the same directory.")
+
+class RetryWatcherPrompt(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__('Retrying watcher as a result of exception.')

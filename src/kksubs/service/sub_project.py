@@ -12,7 +12,7 @@ import pickle
 
 from kksubs.data.subtitle.style import Style
 from kksubs.data.subtitle.subtitle import SubtitleGroup
-from common.exceptions import InvalidProjectException
+from common.exceptions import *
 
 from kksubs.service.extraction.subtitle import extract_subtitle_groups
 from kksubs.service.extraction.style import extract_styles
@@ -246,7 +246,6 @@ class SubtitleProjectService:
             previous_draft_state:Dict[str, SubtitleGroup] = dict()
         else:
 
-            delete_state_path = False
             with open(state_path, "rb") as reader:
                 logger.info(f"Reading previous state from {state_path}")
                 try:
@@ -260,10 +259,8 @@ The program will now delete the previous state and try again...
 Original error message: {traceback.format_exc()} 
                     """)
                     previous_draft_state = dict()
-                    delete_state_path = True
-
-            if delete_state_path:
-                os.remove(state_path)
+                    os.remove(state_path)
+                    raise RetryWatcherPrompt
 
         # check image deltas
         # for indeterminate sets, check for two things:
