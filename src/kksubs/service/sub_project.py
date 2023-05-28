@@ -415,6 +415,7 @@ Original error message: {traceback.format_exc()}
         if allow_multiprocessing:
             pool = multiprocessing.Pool()
             pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.project_directory, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
+            pool.close()
         else:
             for i, subtitle_group in enumerate(subtitle_groups):
                 add_subtitle_group_process(i, subtitle_group, self.project_directory, num_of_images)

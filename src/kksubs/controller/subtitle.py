@@ -20,6 +20,22 @@ class SubtitleController:
         self.service = SubtitleProjectService(project_directory=self.project_directory)
         self.watcher = SubtitleWatcher(self.service)
 
+    def get_scripts_directory(self):
+        # script should be more appropriate than draft.
+        return self.service.drafts_dir
+    
+    def get_scripts(self):
+        return os.listdir(self.get_scripts_directory())
+    
+    def get_output_directory(self):
+        return self.service.outputs_dir
+
+    def get_output_directory_by_script(self, script_file):
+        return os.path.join(self.get_output_directory(), os.path.splitext(os.path.basename(script_file))[0])
+
+    def get_image_directory(self):
+        return self.service.images_dir
+
     def info(self):
         print('Koikatsu subtitles command line tool.')
 
