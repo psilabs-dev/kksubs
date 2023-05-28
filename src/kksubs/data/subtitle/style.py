@@ -14,6 +14,7 @@ class Style(BaseData):
             outline_data:OutlineData=None,
             outline_data_1:OutlineData1=None,
             box_data:BoxData=None,
+            asset_data:Asset=None,
             brightness:Brightness=None,
             gaussian:Gaussian=None,
             motion:Motion=None,
@@ -31,6 +32,7 @@ class Style(BaseData):
         self.outline_data = outline_data
         self.outline_data_1 = outline_data_1
         self.box_data = box_data
+        self.asset_data = asset_data
         self.brightness = brightness
         self.gaussian = gaussian
         self.motion = motion
@@ -61,6 +63,7 @@ class Style(BaseData):
             outline_data=OutlineData.deserialize(outline_dict=style_dict.get(OutlineData.field_name)),
             outline_data_1=OutlineData1.deserialize(outline_dict=style_dict.get(OutlineData1.field_name)),
             box_data=BoxData.deserialize(box_style_dict=style_dict.get(BoxData.field_name)),
+            asset_data=Asset.deserialize(data=style_dict.get(Asset.field_name)),
             brightness=Brightness.deserialize(values=style_dict.get(Brightness.field_name)),
             gaussian=Gaussian.deserialize(values=style_dict.get(Gaussian.field_name)),
             motion=Motion.deserialize(values=style_dict.get(Motion.field_name)),
@@ -92,6 +95,10 @@ class Style(BaseData):
         if essential:
             return
         
+        if self.asset_data is None:
+            self.asset_data = other.asset_data
+        else:
+            self.asset_data.coalesce(other.asset_data)
         if self.brightness is None:
             self.brightness = other.brightness
         else:
@@ -128,6 +135,9 @@ class Style(BaseData):
             self.outline_data_1.coalesce(OutlineData1.get_default())
             self.outline_data_1.correct_values()
         self.box_data.correct_values()
+        if self.asset_data is not None:
+            self.asset_data.coalesce(Asset.get_default())
+            self.asset_data.correct_values()
         if self.brightness is not None:
             self.brightness.coalesce(Brightness.get_default())
             self.brightness.correct_values()

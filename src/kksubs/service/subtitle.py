@@ -77,6 +77,33 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     tb_center_x, tb_center_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=None) # center of rotation.
     tb_anchor_x, tb_anchor_y = get_pil_coordinates(image, anchor=anchor, grid4=grid4, grid10=grid10, nudge=nudge)
 
+    # asset data
+    asset_data = style.asset_data
+    if asset_data is not None:
+        asset_path = asset_data.path
+        asset_rotate = asset_data.rotate
+        asset_scale = asset_data.scale
+        asset_alpha = asset_data.alpha
+        if asset_path is None or not os.path.exists(asset_path):
+            logger.error(f'Asset is None or path {asset_path} does not exist.')
+        else:
+            asset = Image.open(asset_path)
+            asset_width, asset_height = asset.size
+            asset_width, asset_height = int(asset_width*asset_scale), int(asset_height*asset_scale)
+            asset_rotate = coalesce(asset_rotate, rotate, 0)
+            asset_scale = coalesce(asset_scale, 1)
+            asset_position = (int(tb_anchor_x-asset_width//2), int(tb_anchor_y-asset_height//2))
+            asset = asset.rotate(
+                asset_rotate
+            ).resize(
+                (asset_width, asset_height)
+            )
+            asset_mask = asset.convert("RGBA")
+            if asset_alpha is not None and asset_alpha < 1:
+                asset_mask = ImageEnhance.Brightness(asset_mask.getchannel('A')).enhance(asset_alpha)
+            image.paste(asset, asset_position, asset_mask)
+
+    # add background
     background = style.background
     if background is not None:
         bg_path = background.path
