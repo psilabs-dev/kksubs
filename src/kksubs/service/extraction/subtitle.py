@@ -16,7 +16,7 @@ default_style_by_field_name:Dict[str, BaseData] = {
         OutlineData, 
         OutlineData1, 
         BoxData, 
-        AssetData,
+        Asset,
         Brightness, 
         Gaussian, 
         Motion, 

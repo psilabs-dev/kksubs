@@ -169,8 +169,8 @@ class BoxData(BaseData):
         self.nudge = to_xy_coords(self.nudge)
         self.rotate = to_integer(self.rotate)
 
-class AssetData(BaseData):
-    field_name = 'asset_data'
+class Asset(BaseData):
+    field_name = 'asset'
 
     def __init__(
             self,
@@ -186,15 +186,15 @@ class AssetData(BaseData):
 
     @classmethod
     def get_default(cls):
-        return AssetData()
+        return Asset()
     
     @classmethod
     def deserialize(cls, data=None):
         if data is None:
             return None
-        return AssetData(**data)
+        return Asset(**data)
     
-    def coalesce(self, other:"AssetData"):
+    def coalesce(self, other:"Asset"):
         if other is None:
             return
         self.path = coalesce(self.path, other.path)

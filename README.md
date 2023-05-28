@@ -340,6 +340,10 @@ In addition to styling the text itself, the `Style` object contains other fields
 
 | style field ID | name | values | description |
 |-|-|-|-|
+| `asset.path` | path to image asset | | |
+| `asset.rotate` | adjust asset angle | |
+| `asset.scale` | adjust asset size | |
+| `asset.alpha` | adjust asset alpha channel | |
 | `brightness.value` | adjust brightness | positive float | Adjust the brightness of an image. Decrease to lower brightness.<br/>Default is 1 (original brightness).
 | `gaussian.value` | apply gaussian blur | positive int<br/>0 | Apply gaussian blur to an image.<br/>Default is 0 (no blur)
 | `motion` | motion blur | | Data related to applying motion blur to an image.
