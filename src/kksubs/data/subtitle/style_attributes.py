@@ -169,6 +169,41 @@ class BoxData(BaseData):
         self.nudge = to_xy_coords(self.nudge)
         self.rotate = to_integer(self.rotate)
 
+class AssetData(BaseData):
+    field_name = 'asset'
+
+    def __init__(
+            self,
+            path:str=None,
+            rotate:int=None,
+            scale:float=None,
+    ):
+        self.path = path
+        self.rotate = rotate
+        self.scale = scale
+
+    @classmethod
+    def get_default(cls):
+        return AssetData()
+    
+    @classmethod
+    def deserialize(cls, data=None):
+        if data is None:
+            return None
+        return AssetData(**data)
+    
+    def coalesce(self, other:"AssetData"):
+        if other is None:
+            return
+        self.path = other.path
+        self.rotate = other.rotate
+        self.scale = other.scale
+
+    def correct_values(self):
+        self.path = to_string(self.path)
+        self.rotate = to_integer(self.rotate)
+        self.scale = to_float(self.scale)
+
 class Brightness(BaseData):
     field_name = "brightness"
 

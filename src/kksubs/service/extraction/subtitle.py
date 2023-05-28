@@ -12,8 +12,16 @@ logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
     base_data.field_name:base_data for base_data in [
-        TextData, OutlineData, OutlineData1, BoxData, 
-        Brightness, Gaussian, Motion, Background, Mask,
+        TextData, 
+        OutlineData, 
+        OutlineData1, 
+        BoxData, 
+        AssetData,
+        Brightness, 
+        Gaussian, 
+        Motion, 
+        Background, 
+        Mask,
         Style
     ]
 }
