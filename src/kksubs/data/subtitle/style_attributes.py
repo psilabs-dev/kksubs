@@ -177,10 +177,12 @@ class AssetData(BaseData):
             path:str=None,
             rotate:int=None,
             scale:float=None,
+            alpha:int=None,
     ):
         self.path = path
         self.rotate = rotate
         self.scale = scale
+        self.alpha = alpha
 
     @classmethod
     def get_default(cls):
@@ -198,11 +200,13 @@ class AssetData(BaseData):
         self.path = coalesce(self.path, other.path)
         self.rotate = coalesce(self.rotate, other.rotate)
         self.scale = coalesce(self.scale, other.scale)
+        self.alpha = coalesce(self.alpha, other.alpha)
 
     def correct_values(self):
         self.path = to_string(self.path)
         self.rotate = to_integer(self.rotate)
         self.scale = to_float(self.scale)
+        self.alpha = to_float(self.alpha)
 
 class Brightness(BaseData):
     field_name = "brightness"

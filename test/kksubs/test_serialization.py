@@ -21,6 +21,7 @@ class TestSerialization(unittest.TestCase):
         self.assert_representations_equal(Brightness(), Brightness)
         self.assert_representations_equal(Gaussian(), Gaussian)
         self.assert_representations_equal(Motion(), Motion)
+        self.assert_representations_equal(AssetData(), AssetData)
 
     def test_style_serialization(self):
         self.assert_representations_equal(Style(), Style)
