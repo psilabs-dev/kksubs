@@ -89,9 +89,9 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
         else:
             asset = Image.open(asset_path)
             asset_width, asset_height = asset.size
-            asset_width, asset_height = int(asset_width*asset_scale), int(asset_height*asset_scale)
             asset_rotate = coalesce(asset_rotate, rotate, 0)
             asset_scale = coalesce(asset_scale, 1)
+            asset_width, asset_height = int(asset_width*asset_scale), int(asset_height*asset_scale)
             asset_position = (int(tb_anchor_x-asset_width//2), int(tb_anchor_y-asset_height//2))
             asset = asset.rotate(
                 asset_rotate
