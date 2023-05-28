@@ -28,6 +28,7 @@ class TestSerialization(unittest.TestCase):
     def test_subtitle_serialization(self):
         self.maxDiff = None
         self.assert_representations_equal(Subtitle(), Subtitle)
+        self.assert_representations_equal(Subtitle(style=Style(background=Background(path='abcd'))), Subtitle)
 
     def test_subtitle_group_serialization(self):
         self.assert_representations_equal(SubtitleGroup(), SubtitleGroup)

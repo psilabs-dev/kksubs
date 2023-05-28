@@ -45,7 +45,6 @@ class TestSubtitling(unittest.TestCase):
 
     def test_add_subtitles(self):
         with tempfile.TemporaryDirectory() as test_dir:
-            print(f'Got testdir {test_dir}')
             self.set_up_workspace(test_dir)
             self.controller.create()
             self.assertTrue(os.path.exists(test_dir))
