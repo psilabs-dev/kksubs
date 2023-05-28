@@ -244,3 +244,11 @@ class StyleMatrix(RepresentableData):
                 output_row = row.action(output_row)
 
         return output_row.styles
+    
+    @classmethod
+    def deserialize(self, matrix_data) -> "StyleMatrix":
+        row_datas = matrix_data.get('rows')
+        if row_datas is None or not row_datas:
+            return StyleMatrix()
+        rows = list(map(StyleRow.deserialize, row_datas))
+        return StyleMatrix(rows=rows)
