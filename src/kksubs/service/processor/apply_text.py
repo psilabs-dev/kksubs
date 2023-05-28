@@ -20,6 +20,9 @@ def create_text_layer(
     image_width, image_height = image.size
 
     text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    if content is None or not content:
+        return text_layer
+
     text_draw = ImageDraw.Draw(text_layer)
 
     default_text_width, default_text_height = _get_text_dimensions("l", font)

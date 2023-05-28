@@ -4,6 +4,7 @@ import unittest
 from common.data.representable import RepresentableData
 from kksubs.data.subtitle.style_attributes import *
 from kksubs.data.subtitle.style import *
+from kksubs.data.subtitle.subtitle import *
 
 class TestSerialization(unittest.TestCase):
 
@@ -23,3 +24,10 @@ class TestSerialization(unittest.TestCase):
 
     def test_style_serialization(self):
         self.assert_representations_equal(Style(), Style)
+
+    def test_subtitle_serialization(self):
+        self.maxDiff = None
+        self.assert_representations_equal(Subtitle(), Subtitle)
+
+    def test_subtitle_group_serialization(self):
+        self.assert_representations_equal(SubtitleGroup(), SubtitleGroup)

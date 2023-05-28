@@ -94,7 +94,12 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
         for sub_style in styles:
             image = add_subtitle_to_image(image, Subtitle(content=[], style=sub_style), project_directory)
 
-    font = ImageFont.truetype(font_style, font_size)
+    try:
+        font = ImageFont.truetype(font_style, font_size)
+    except OSError:
+        logger.error(f"An error occurred while creating font object, this is probably because the font {font_style} cannot be found. Content will be automatically removed.")
+        content = []
+        font = None
     
     text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
 
