@@ -3,6 +3,7 @@ import os
 from typing import List, Optional
 import yaml
 from common.exceptions import InvalidProjectException
+import subprocess
 from kksubs.service.file import FileService
 from kkp.service.studio_project import StudioProjectService
 
@@ -317,6 +318,18 @@ class ProjectController:
         self._pull_captures()
         if compose:
             self.compose()
+
+    def open_studio(self):
+        studio_exe_path = os.path.join(self.game_directory, 'CharaStudio.exe')
+        print(f'Launching Studio; please wait...')
+        subprocess.Popen(studio_exe_path)
+        return
+
+    def open_game(self):
+        game_exe_path = os.path.join(self.game_directory, 'Koikatsu Party.exe')
+        print(f'Launching Koikatsu Party; please wait...')
+        subprocess.Popen(game_exe_path)
+        return
 
     def close(self):
         # persist changes to metadata

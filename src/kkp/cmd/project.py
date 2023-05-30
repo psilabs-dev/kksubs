@@ -47,6 +47,10 @@ def command_line():
     delete_parser.add_argument('project_name', type=str, help='Name of project to delete.')
 
     sync_parser = subparsers.add_parser('sync', help='Sync current project with library.')
+
+    studio_parser = subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
+
+    game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
     
     args = parser.parse_args()
     command = args.command
@@ -97,6 +101,12 @@ def command_line():
 
     if command == 'sync':
         controller.sync()
+
+    if command == 'studio':
+        controller.open_studio()
+
+    if command == 'game':
+        controller.open_game()
     # END PROJECT COMMANDS
 
     if command is None:
