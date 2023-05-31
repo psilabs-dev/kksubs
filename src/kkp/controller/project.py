@@ -83,7 +83,7 @@ class ProjectController:
         if not os.path.exists(config_file_path):
             return dict()
         with open(config_file_path, 'r') as reader:
-            return yaml.safe_load(reader)
+            return coalesce(yaml.safe_load(reader), dict())
         
     def _write_config(self, config_path:str=None):
         if self.workspace is None:
@@ -102,7 +102,7 @@ class ProjectController:
         if not os.path.exists(data_file_path):
             return dict()
         with open(data_file_path, 'r') as reader:
-            return yaml.safe_load(reader)
+            return coalesce(yaml.safe_load(reader), dict())
 
     def _write_data(self, data_path:str=None):
         if self.workspace is None:
@@ -153,16 +153,17 @@ class ProjectController:
             # check for, import, and remove old data files.
             kks_data_file = os.path.join(metadata_directory, 'kksubs.yaml')
             if os.path.exists(kks_data_file):
-                logger.info('Data files with older versions detected, attempting to import settings.')
-                previous_data = self._read_data(data_path=kks_data_file)
+                confirm = input('A kksubs.yaml file is detected. Import from the file (This will delete the kksubs.yaml file and create new config files)? (Y)') == "Y"
+                if confirm:
+                    previous_data = self._read_data(data_path=kks_data_file)
 
-                for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
-                    config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
+                    for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
+                        config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
 
-                for data_key in [CURRENT_PROJECT_KEY, SUBTITLE_SYNC_STATE_KEY, STUDIO_SYNC_STATE_KEY, SYNC_TIME_KEY, LIST_PROJECT_HISTORY_KEY]:
-                    data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
-                logger.info('Deleting old data file.')
-                os.remove(kks_data_file)
+                    for data_key in [CURRENT_PROJECT_KEY, SUBTITLE_SYNC_STATE_KEY, STUDIO_SYNC_STATE_KEY, SYNC_TIME_KEY, LIST_PROJECT_HISTORY_KEY]:
+                        data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
+                    logger.info('Deleting old data file.')
+                    os.remove(kks_data_file)
 
         for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
             path = config_info.get(key)
