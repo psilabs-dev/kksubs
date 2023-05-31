@@ -243,8 +243,8 @@ class StudioProjectService:
         if not self.is_project(project_name):
             raise InvalidProjectException(project_name)
         if safe:
-            confirmation = input(f"Delete project {project_name}? (y/n): ")
-            if confirmation != "y":
+            confirmation = input(f"Delete project {project_name}? (Y): ")
+            if confirmation != "Y":
                 return False
         shutil.rmtree(os.path.join(self.library, project_name))
         return True
