@@ -97,7 +97,7 @@ class ProjectController:
         with open(config_path, 'w') as writer:
             return yaml.safe_dump(config, writer)
 
-    def _read_data(self, data_path:str=None):
+    def _read_data(self, data_path:str=None) -> Dict:
         data_file_path = self._get_data_file_path(data_file_path=data_path)
         if not os.path.exists(data_file_path):
             return dict()
@@ -149,7 +149,20 @@ class ProjectController:
         current_version = get_kksubs_version()
         if version_from_data is None or version.parse(version_from_data) < version.parse(current_version):
             print(f'A different version {version_from_data} is detected (current version {current_version}).')
-            time.sleep(3)
+
+            # check for, import, and remove old data files.
+            kks_data_file = os.path.join(metadata_directory, 'kksubs.yaml')
+            if os.path.exists(kks_data_file):
+                logger.info('Data files with older versions detected, attempting to import settings.')
+                previous_data = self._read_data(data_path=kks_data_file)
+
+                for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
+                    config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
+
+                for data_key in [CURRENT_PROJECT_KEY, SUBTITLE_SYNC_STATE_KEY, STUDIO_SYNC_STATE_KEY, SYNC_TIME_KEY, LIST_PROJECT_HISTORY_KEY]:
+                    data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
+                logger.info('Deleting old data file.')
+                os.remove(kks_data_file)
 
         for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
             path = config_info.get(key)
