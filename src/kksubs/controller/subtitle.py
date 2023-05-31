@@ -28,7 +28,7 @@ class SubtitleController:
         return os.listdir(self.get_scripts_directory())
     
     def get_output_directory(self):
-        return self.service.outputs_dir
+        return self.service.get_output_directory()
 
     def get_output_directory_by_script(self, script_file):
         return os.path.join(self.get_output_directory(), os.path.splitext(os.path.basename(script_file))[0])
@@ -67,6 +67,24 @@ class SubtitleController:
             allow_multiprocessing=allow_multiprocessing, 
             allow_incremental_updating=allow_incremental_updating
         )
+    
+    def open_output_folders(self, drafts:str=None):
+        # open the folder containing subtitled images corresponding to given draft.
+        # if draft is not given, opens every folder in the outputs folder.
+        output_dir = self.get_output_directory()
+        if drafts is not None and not drafts:
+            for draft in drafts:
+                draft_folder = os.path.join(output_dir, draft)
+                if os.path.exists(draft_folder):
+                    os.startfile(draft_folder)
+                else:
+                    raise FileNotFoundError(draft_folder)
+                return
+        
+        folders = os.listdir(output_dir)
+        for folder in folders:
+            folder = os.path.join(output_dir, folder)
+            os.startfile(folder)
 
     def clear(self):
         return self.service.clear_subtitles(force=True)

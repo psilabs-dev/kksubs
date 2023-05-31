@@ -51,6 +51,9 @@ def command_line():
     studio_parser = subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
 
     game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
+
+    show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
+    show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
     
     args = parser.parse_args()
     command = args.command
@@ -107,6 +110,11 @@ def command_line():
 
     if command == 'game':
         controller.open_game()
+
+    if command == 'show':
+        drafts = args.drafts
+        controller.open_output_folders(drafts=drafts)
+
     # END PROJECT COMMANDS
 
     if command is None:

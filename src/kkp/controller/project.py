@@ -268,6 +268,9 @@ class ProjectController:
             if project_name.isdigit() and int(project_name) < len(previous_projects):
                 project_name = previous_projects[int(project_name)]
         return project_name
+    
+    def get_output_directory(self):
+        return self.subtitle_project_service.get_output_directory()
 
     def checkout(self, project_name:str, new_branch:bool=False):
 
@@ -381,6 +384,22 @@ class ProjectController:
         print(f'Launching Koikatsu Party; please wait...')
         subprocess.Popen(game_exe_path)
         return
+    
+    def open_output_folders(self, drafts:str=None):
+        output_dir = self.get_output_directory()
+        if drafts is not None and not drafts:
+            for draft in drafts:
+                draft_folder = os.path.join(output_dir, draft)
+                if os.path.exists(draft_folder):
+                    os.startfile(draft_folder)
+                else:
+                    raise FileNotFoundError(draft_folder)
+                return
+        
+        folders = os.listdir(output_dir)
+        for folder in folders:
+            folder = os.path.join(output_dir, folder)
+            os.startfile(folder)
 
     def close(self):
         # persist changes to metadata

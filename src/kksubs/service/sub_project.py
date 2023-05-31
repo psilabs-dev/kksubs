@@ -172,6 +172,9 @@ class SubtitleProjectService:
 
     def get_image_paths(self):
         return self.filter_images(self.images_dir)
+    
+    def get_output_directory(self):
+        return self.outputs_dir
 
     def get_output_paths(self, draft_id:str):
         return self.filter_images(os.path.join(self.outputs_dir, draft_id))

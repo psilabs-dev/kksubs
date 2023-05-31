@@ -31,6 +31,9 @@ def command_line():
 
     compose_parser = subparsers.add_parser('compose', help='Compose subtitles once.')
 
+    show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
+    show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
+
     for subparser in [activate_parser, compose_parser]:
         subparser.add_argument('-d', '--draft', default=None)
         subparser.add_argument('--disable-multiprocessing', action='store_true')
@@ -91,6 +94,10 @@ def command_line():
 
     if command == 'clear':
         controller.clear()
+
+    if command == 'show':
+        drafts = args.drafts
+        controller.open_output_folders(drafts=drafts)
 
     if command is None:
         controller.info()
