@@ -202,7 +202,7 @@ class ProjectController:
                 self.file_service.sync_unidirectional(
                     kksubs_project_path, 
                     self.workspace, 
-                    filename_filter=['drafts', 'style.yml', 'style.yaml', 'output']
+                    filename_filter=['drafts', 'styles.yml', 'styles.yaml', 'output']
                 )
         else:
             raise InvalidProjectException(project_name)
