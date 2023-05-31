@@ -153,7 +153,7 @@ class ProjectController:
             # check for, import, and remove old data files.
             kks_data_file = os.path.join(metadata_directory, 'kksubs.yaml')
             if os.path.exists(kks_data_file):
-                confirm = input('A kksubs.yaml file is detected. Import from the file (This will delete the kksubs.yaml file and create new config files)? (Y)') == "Y"
+                confirm = input('A kksubs.yaml file is detected. Import settings from that file? This will delete the kksubs.yaml file and create new config files. (Y) ') == "Y"
                 if confirm:
                     previous_data = self._read_data(data_path=kks_data_file)
 
