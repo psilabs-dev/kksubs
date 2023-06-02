@@ -9,6 +9,7 @@ from typing import Dict, List, Set
 
 from common.data.file import Bucket, FileType
 from common.data.representable import RepresentableData
+from common.utils.coalesce import coalesce
 
 logger = logging.getLogger(__name__)
 
@@ -293,24 +294,24 @@ def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
 
     if previous_state is None:
         previous_state = {
-            'files': [],
-            'folders': [],
+            'files': dict(),
+            'folders': dict(),
         }
 
     rfiles_a = set(bucket_a.get_files().keys())
     rfiles_b = set(bucket_b.get_files().keys())
-    rfiles_0 = set(previous_state.get('files'))
+    rfiles_0 = set(coalesce(previous_state.get('files'), set()))
 
     subfolders_a = set(bucket_a.get_folders().keys())
     subfolders_b = set(bucket_b.get_folders().keys())
-    subfolders_0 = set(previous_state.get('folders'))
+    subfolders_0 = set(coalesce(previous_state.get('folders'), set()))
 
     last_sync_time = previous_state.get('time')
 
     folder_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, subfolders_a, subfolders_b, subfolders_0, last_sync_time, FileType.DIRECTORY)
     file_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, rfiles_a, rfiles_b, rfiles_0, last_sync_time, FileType.REGULAR_FILE)
-    # logger.debug(f'Obtained folder deltas: {folder_deltas}')
-    # logger.debug(f'Obtained file deltas:   {file_deltas}')
+    logger.info(f'Obtained folder deltas: {folder_deltas}')
+    logger.info(f'Obtained file deltas:   {file_deltas}')
 
     # check certain things
     # if a folder is deleted in X but a file is added in Y/folder, then the folder cannot be deleted.
