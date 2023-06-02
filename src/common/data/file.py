@@ -1,6 +1,15 @@
+from enum import Enum
 import os
 import shutil
 import time
+import logging
+
+logger = logging.getLogger(__name__)
+
+class FileType(Enum):
+
+    REGULAR_FILE = 1
+    DIRECTORY = 2
 
 class Bucket:
     def __init__(self, path=None, files=None, folders=None): # path must exist.
@@ -49,12 +58,18 @@ class Bucket:
             return os.path.getmtime(path)
         if os.path.isdir(path):
             max_mtime = os.path.getmtime(path)
-            for root, _, files in os.walk(path):
-                mtimes_by_root = list(map(os.path.getmtime, map(lambda file:os.path.join(root, file), files)))
-                if not mtimes_by_root:
-                    continue
-                max_mtime = max([max_mtime, max(mtimes_by_root)])
+            # for root, _, files in os.walk(path):
+            #     mtimes_by_root = list(map(os.path.getmtime, map(lambda file:os.path.join(root, file), files)))
+            #     if not mtimes_by_root:
+            #         continue
+            #     max_mtime = max([max_mtime, max(mtimes_by_root)])
             return max_mtime
+        
+    def get_stored_mtime(self, path, file_type):
+        if file_type == FileType.REGULAR_FILE:
+            return self.files[path]
+        if file_type == FileType.DIRECTORY:
+            return self.folders[path]
 
     def create_folder(self, path:str):
         path = os.path.join(self.path, path)
@@ -66,6 +81,7 @@ class Bucket:
     def copy_to(self, other_bucket:"Bucket", path:str):
         src_path = os.path.join(self.path, path)
         if not os.path.exists(src_path):
+            logger.debug(f'Error: Cannot find {path} within {self.path}')
             return
         
         target_path = os.path.join(other_bucket.path, path)
@@ -78,6 +94,7 @@ class Bucket:
         path_in_a = os.path.join(self.path, path)
         path_in_b = os.path.join(other_bucket.path, path)
         if not os.path.exists(path_in_a) and not os.path.exists(path_in_b):
+            logger.debug(f'Error: {path} is missing in both buckets.')
             return
 
         if self.files[path] > other_bucket.files[path] and self.is_path(path):
@@ -91,6 +108,7 @@ class Bucket:
 
         path = os.path.join(self.path, path)
         if not os.path.exists(path):
+            logger.debug(f'Error: {path} is missing, cannot be deleted from bucket {self.path}.')
             return
         
         for is_type, action in [(os.path.isfile, os.remove), (os.path.isdir, shutil.rmtree)]:

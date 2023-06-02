@@ -1,15 +1,152 @@
-from enum import Enum
 import logging
 import os
 from os.path import getmtime
 import subprocess
 
 import shutil
+import time
 from typing import Dict, List, Set
 
-from common.data.file import Bucket
+from common.data.file import Bucket, FileType
+from common.data.representable import RepresentableData
 
 logger = logging.getLogger(__name__)
+
+
+    # total_changes = len(undeleted_modified) + len(deleted_in_one_bucket) + len(added_in_one_bucket) + len(added_in_two_buckets)
+    # total_num_files = total_changes + len(unmodified)
+
+def get_parents(path):
+    parents = set()
+    dirname = os.path.dirname(path)
+    dirs = dirname.split(os.sep)
+    for i in range(1, len(dirs)+1):
+        parents.add(os.sep.join(dirs[:i]))
+    return parents
+
+class SyncDeltas(RepresentableData):
+
+    def __init__(
+            self,
+            unmodified:Set[str]=None,
+            undeleted_modified:Set[str]=None,
+            delete_from_a:Set[str]=None,
+            delete_from_b:Set[str]=None,
+            add_to_a:Set[str]=None,
+            add_to_b:Set[str]=None,
+            add_to_both:Set[str]=None,
+    ):
+        self.unmodified = unmodified
+        self.undeleted_modified = undeleted_modified
+        self.delete_from_a = delete_from_a
+        self.delete_from_b = delete_from_b
+        self.add_to_a = add_to_a
+        self.add_to_b = add_to_b
+        self.add_two = add_to_both
+
+    def deserialize(self, sync_deltas_data):
+        return SyncDeltas(**sync_deltas_data)
+
+class SyncDeltaService:
+
+    def __init__(self, file_deltas:SyncDeltas, folder_deltas:SyncDeltas, bucket_a:Bucket, bucket_b:Bucket, last_sync_time:int):
+        self.file_deltas = file_deltas
+        self.folder_deltas = folder_deltas
+        self.bucket_a = bucket_a
+        self.bucket_b = bucket_b
+        self.last_sync_time = last_sync_time
+
+    def action_unmodified(self, file_path:str, file_type:FileType):
+        pass
+
+    def action_undeleted_modified(self, file_path:str, file_type:FileType):
+        if file_type == FileType.REGULAR_FILE:
+            self.bucket_a.sync_most_recent(self.bucket_b, file_path)
+            logger.debug(f'synced {file_path}')
+        if file_type == FileType.DIRECTORY:
+            pass
+
+    def action_delete_from_a(self, file_path:str, file_type:FileType):
+        if self.bucket_b.get_stored_mtime(file_path, file_type) > self.last_sync_time:
+            if file_type == FileType.REGULAR_FILE:
+                self.bucket_b.copy_to(self.bucket_a, file_path)
+                logger.debug(f'Copied {file_path} to A (override delete in A)')
+            if file_type == FileType.DIRECTORY:
+                self.bucket_a.create_folder(file_path)
+                logger.debug(f'Created folder {file_path} (override delete in A)')
+        else:
+            self.bucket_b.delete(file_path)
+            logger.debug(f'Deleted {file_path} from B.')
+
+    def action_delete_from_b(self, file_path:str, file_type:FileType):
+        if self.bucket_a.get_stored_mtime(file_path, file_type) > self.last_sync_time:
+            if file_type == FileType.REGULAR_FILE:
+                self.bucket_a.copy_to(self.bucket_b, file_path)
+                logger.debug(f'Copied {file_path} to B. (override delete in B)')
+            if file_type == FileType.DIRECTORY:
+                self.bucket_b.create_folder(file_path)
+                logger.debug(f'Created {file_path} in B. (override delete in B)')
+        else:
+            self.bucket_a.delete(file_path)
+            logger.debug(f'Deleted {file_path} from A.')
+
+    def action_add_to_a(self, file_path:str, file_type:FileType):
+        if file_type == FileType.REGULAR_FILE:
+            self.bucket_a.copy_to(self.bucket_b, file_path)
+            logger.debug(f'Copied {file_path} to B.')
+        else:
+            self.bucket_b.create_folder(file_path)
+            logger.debug(f'Created {file_path} in B.')
+
+    def action_add_to_b(self, file_path:str, file_type:FileType):
+        if file_type == FileType.REGULAR_FILE:
+            self.bucket_b.copy_to(self.bucket_a, file_path)
+            logger.debug(f'Copied {file_path} to A.')
+        else:
+            self.bucket_a.create_folder(file_path)
+            logger.debug(f'Created {file_path} in A.')
+
+    def action_add_two(self, file_path:str, file_type:FileType):
+        if file_type == FileType.REGULAR_FILE:
+            self.bucket_a.sync_most_recent(self.bucket_b, file_path)
+            logger.debug(f'Synced {file_path} contents.')
+        if file_type == FileType.DIRECTORY:
+            pass
+
+    def resolve_folder_file_delta_conflicts(self):
+        # if add folder/file to A after folder deleted in B, file takes priority
+        add_to_a = self.file_deltas.add_to_a
+        keep_in_b = set()
+        for path in add_to_a:
+            keep_in_b = keep_in_b.union(get_parents(path))
+        self.folder_deltas.delete_from_b = self.folder_deltas.delete_from_b.difference(keep_in_b)
+        self.folder_deltas.add_to_a = self.folder_deltas.add_to_a.union(keep_in_b)
+        logger.debug(f'Moved {keep_in_b} from delete_from_b to add_to_a.')
+
+        add_to_b = self.file_deltas.add_to_b
+        keep_in_a = set()
+        for path in add_to_b:
+            keep_in_a = keep_in_a.union(get_parents(path))
+        self.folder_deltas.delete_from_a = self.folder_deltas.delete_from_a.difference(keep_in_a)
+        self.folder_deltas.add_to_b = self.folder_deltas.add_to_b.union(keep_in_a)
+        logger.debug(f'Moved {keep_in_a} from delete_from_a to add_to_b.')
+
+        # TODO: if a folder is being deleted anyways, files that are to be deleted should be removed.
+
+    def apply_deltas(self):
+        for deltas_by_type, file_type in [(self.folder_deltas, FileType.DIRECTORY), (self.file_deltas, FileType.REGULAR_FILE)]:
+            for paths, action in [
+                (deltas_by_type.unmodified, self.action_unmodified),
+                (deltas_by_type.undeleted_modified, self.action_undeleted_modified),
+                (deltas_by_type.delete_from_a, self.action_delete_from_a),
+                (deltas_by_type.delete_from_b, self.action_delete_from_b),
+                (deltas_by_type.add_to_a, self.action_add_to_a),
+                (deltas_by_type.add_to_b, self.action_add_to_b),
+                (deltas_by_type.add_two, self.action_add_two),
+            ]:
+                for path in paths:
+                    action(path, file_type)
+        logger.debug('Deltas applied.')
 
 def save_most_recent_path(path_1, path_2) -> int:
     output = max(getmtime(path_1), getmtime(path_2))
@@ -94,12 +231,7 @@ def sync_unidirectional(source, destination, filename_filter:List[str]=None, ena
     else:
         subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-class FileType(Enum):
-
-    REGULAR_FILE = 1
-    DIRECTORY = 2
-
-def sync_bidirectional_objects(
+def _get_bidirectional_deltas(
         bucket_a:Bucket, 
         bucket_b:Bucket, 
         paths_a:Set[str], 
@@ -107,8 +239,7 @@ def sync_bidirectional_objects(
         paths_0:Set[str], 
         last_sync_time:int, 
         file_type:FileType
-) -> Bucket:
-
+) -> SyncDeltas:
     # start of analysis
     # undeleted (but possibly modified)
     undeleted_paths = paths_a.intersection(paths_b).intersection(paths_0)
@@ -121,97 +252,42 @@ def sync_bidirectional_objects(
         undeleted_modified = set()
 
     # deleted from exactly one bucket (undeleted one is possibly modified)
-    deleted_in_one_bucket = paths_a.intersection(paths_0).difference(paths_b).union(
-        paths_b.intersection(paths_0).difference(paths_a)
-    )
+    delete_from_a = paths_b.intersection(paths_0).difference(paths_a)
+    delete_from_b = paths_a.intersection(paths_0).difference(paths_b)
+
     # added to both buckets (possibly different)
     added_in_two_buckets = paths_a.intersection(paths_b).difference(paths_0)
+
     # added to exactly one bucket
-    added_in_one_bucket = paths_a.difference(paths_b).difference(paths_0).union(
-        paths_b.difference(paths_a).difference(paths_0)
-    )
+    add_to_a = paths_a.difference(paths_b).difference(paths_0)
+    add_to_b = paths_b.difference(paths_a).difference(paths_0)
+
     # deleted from both buckets (no action needed)
     deleted = paths_0.difference(paths_a).difference(paths_b)
 
-    total_changes = len(undeleted_modified) + len(deleted_in_one_bucket) + len(added_in_one_bucket) + len(added_in_two_buckets)
+    total_changes = sum(map(len, [
+        undeleted_modified,
+        delete_from_a,
+        delete_from_b,
+        add_to_a,
+        add_to_b,
+        added_in_two_buckets,
+        deleted,
+    ]))
+
     total_num_files = total_changes + len(unmodified)
-    # end of analysis
-    # print(file_type, deleted_in_one_bucket, added_in_two_buckets, added_in_one_bucket, deleted)
 
-    # start of file operations
-    # apply updates.
-    for path in undeleted_paths:
-        if file_type == FileType.REGULAR_FILE:
-            if max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time:
-                continue
-            bucket_a.sync_most_recent(bucket_b, path)
-        if file_type == FileType.DIRECTORY:
-            pass
-
-    for path in deleted_in_one_bucket:
-        # check if undeleted one is modified.
-        if file_type == FileType.REGULAR_FILE:
-            if path in paths_a:
-                if bucket_a.files[path] > last_sync_time:
-                    logger.debug(f'Copy {path} to B.')
-                    bucket_a.copy_to(bucket_b, path)
-                    continue
-                else:
-                    logger.debug(f'Delete {path} from A')
-                    bucket_a.delete(path)
-            if path in paths_b:
-                if bucket_b.files[path] > last_sync_time:
-                    logger.debug(f'Copy {path} to A.')
-                    bucket_b.copy_to(bucket_a, path)
-                    continue
-                else:
-                    logger.debug(f'Delete {path} from B.')
-                    bucket_b.delete(path)
-        if file_type == FileType.DIRECTORY:
-            if path in paths_a:
-                if bucket_a.folders[path] > last_sync_time:
-                    logger.debug(f'Copy {path} to B.')
-                    bucket_b.create_folder(path)
-                    continue
-                else:
-                    logger.debug(f'Delete {path} from A')
-                    bucket_a.delete(path)
-            if path in paths_b:
-                if bucket_b.folders[path] > last_sync_time:
-                    logger.debug(f'Copy {path} to A.')
-                    bucket_a.create_folder(path)
-                    continue
-                else:
-                    logger.debug(f'Delete {path} from B.')
-                    bucket_b.delete(path)
-    
-    for path in added_in_two_buckets:
-        if file_type == FileType.REGULAR_FILE:
-            logger.debug(f'Syncing {path} contents.')
-            bucket_a.sync_most_recent(bucket_b, path)
-        if file_type == FileType.DIRECTORY:
-            pass
-
-    for path in added_in_one_bucket:
-        if file_type == FileType.REGULAR_FILE:
-            if path in paths_a:
-                logger.debug(f'Copy {path} to B.')
-                bucket_a.copy_to(bucket_b, path)
-            else:
-                logger.debug(f'Copy {path} to A.')
-                bucket_b.copy_to(bucket_a, path)
-        if file_type == FileType.DIRECTORY:
-            if path in paths_a:
-                logger.debug(f'Copy {path} to B.')
-                bucket_b.create_folder(path)
-            else:
-                logger.debug(f'Copy {path} to A.')
-                bucket_a.create_folder(path)
-
-    return
+    return SyncDeltas(
+        unmodified=unmodified,
+        undeleted_modified=undeleted_modified,
+        delete_from_a=delete_from_a,
+        delete_from_b=delete_from_b,
+        add_to_a=add_to_a,
+        add_to_b=add_to_b,
+        add_to_both=added_in_two_buckets,
+    )
 
 def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
-
     bucket_a = Bucket(folder_1)
     bucket_b = Bucket(folder_2)
 
@@ -231,13 +307,21 @@ def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
 
     last_sync_time = previous_state.get('time')
 
-    sync_bidirectional_objects(bucket_a, bucket_b, subfolders_a, subfolders_b, subfolders_0, last_sync_time, FileType.DIRECTORY)
-    sync_bidirectional_objects(bucket_a, bucket_b, rfiles_a, rfiles_b, rfiles_0, last_sync_time, FileType.REGULAR_FILE)
+    folder_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, subfolders_a, subfolders_b, subfolders_0, last_sync_time, FileType.DIRECTORY)
+    file_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, rfiles_a, rfiles_b, rfiles_0, last_sync_time, FileType.REGULAR_FILE)
+    # logger.debug(f'Obtained folder deltas: {folder_deltas}')
+    # logger.debug(f'Obtained file deltas:   {file_deltas}')
 
-    # # for debugging
-    # proceed = input('Proceed: (Y)') == 'Y'
-    # if not proceed:
-    #     raise KeyboardInterrupt
-    # print('')
+    # check certain things
+    # if a folder is deleted in X but a file is added in Y/folder, then the folder cannot be deleted.
+
+    deltas_service = SyncDeltaService(file_deltas, folder_deltas, bucket_a, bucket_b, last_sync_time)
+    deltas_service.resolve_folder_file_delta_conflicts()
+
+    deltas_service.apply_deltas()
+    logger.debug('Concluded bidirectional sync.')
+
+    # sleep to stabilize newly created file mtimes with new sync time.
+    time.sleep(0.1)
 
     return Bucket(folder_1)

@@ -106,12 +106,13 @@ class TestFileOperations(unittest.TestCase):
             self.assertTrue(os.path.exists(df3))
 
     def test_bidirectional_sync(self):
-        # logging.basicConfig(level=logging.DEBUG)
+        # logging.basicConfig(level=logging.INFO)
 
         with tempfile.TemporaryDirectory() as test_dir:
             source, dest = self.set_up_sync_test(test_dir, self.source_files, self.dest_files)
             synced_bucket = sync_bidirectional(source, dest, None)
             self.assertEqual(get_files_in_directory(source), get_files_in_directory(dest))
+            logger.debug('Finished bsync task 1.')
 
             # delete folder 1 from src, now dest should not contain folder 1.
             sf1 = os.path.join(source, 'folder1')
@@ -125,6 +126,7 @@ class TestFileOperations(unittest.TestCase):
                 'file2',
                 'folder2\\file3'
             })
+            logger.debug('Finished bsync task 2.')
 
             # add folder 3, now dest should contain folder 3.
             sf3 = os.path.join(source, 'folder3')
@@ -139,6 +141,7 @@ class TestFileOperations(unittest.TestCase):
                 'folder2\\file3',
                 # 'folder3\\',
             })
+            logger.debug('Finished bsync task 3.')
 
             # create file in dest folder 3.
             create_files_in_directory(df3, ['file1'])
@@ -151,6 +154,7 @@ class TestFileOperations(unittest.TestCase):
                 'folder2\\file3',
                 'folder3\\file1',
             })
+            logger.debug('Finished bsync task 4.')
 
             # delete folder 3 from dest, now source should not have folder 3.
             shutil.rmtree(df3)
@@ -162,6 +166,7 @@ class TestFileOperations(unittest.TestCase):
                 'file2',
                 'folder2\\file3',
             })
+            logger.debug('Finished bsync task 5.')
 
             # remove folder 2 from source, create folder2\\file1 in dest
             sf2 = os.path.join(source, 'folder2')
@@ -175,16 +180,18 @@ class TestFileOperations(unittest.TestCase):
                 'file2',
                 'folder2\\file1'
             })
+            logger.debug('Finished bsync task 6.')
 
             # remove folder 2 from dest, create folder2\\file1 in source
             df2 = os.path.join(dest, 'folder2')
             shutil.rmtree(df2)
-            create_files_in_directory(source, ['folder2\\file1'])
+            create_files_in_directory(source, ['folder2\\file2'])
             synced_bucket = sync_bidirectional(source, dest, synced_bucket.state())
             self.assertTrue(os.path.exists(df2))
             self.assertEqual(get_files_in_directory(source), get_files_in_directory(dest))
             self.assertEqual(get_files_in_directory(source), {
                 'file1',
                 'file2',
-                'folder2\\file1'
+                'folder2\\file2'
             })
+            logger.debug('Finished bsync task 7.')
