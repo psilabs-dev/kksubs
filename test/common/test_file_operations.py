@@ -31,10 +31,13 @@ class TestFileOperations(unittest.TestCase):
 
     def setUp(self) -> None:
         self.source_files = {
-            'abc'
+            'file1',
+            'file2',
+            'folder1\\file1',
+            'folder1\\file2',
         }
         self.dest_files = {
-            'abcd'
+            'folder2\\file3'
         }
         self.test_dir = None
 
@@ -59,9 +62,47 @@ class TestFileOperations(unittest.TestCase):
             sync_unidirectional(source, dest)
             self.assertEqual(get_files_in_directory(source), get_files_in_directory(dest))
             self.assertEqual(get_files_in_directory(source), self.source_files)
+            
+            # delete folder 1, now dest should not contain folder 1.
+            sf1 = os.path.join(source, 'folder1')
+            df1 = os.path.join(dest, 'folder1')
+            shutil.rmtree(sf1)
+            sync_unidirectional(source, dest)
+            self.assertFalse(os.path.exists(df1))
+
+            # create folder 3 in source, now dest should contain folder 3.
+            sf3 = os.path.join(source, 'folder3')
+            df3 = os.path.join(dest, 'folder3')
+            os.makedirs(sf3)
+            sync_unidirectional(source, dest)
+            self.assertTrue(os.path.exists(df3))
+
+            # delete dest folder 3, dest should have foler 3 again.
+            shutil.rmtree(df3)
+            sync_unidirectional(source, dest)
+            self.assertTrue(os.path.exists(df3))
 
     def test_bidirectional_sync(self):
         with tempfile.TemporaryDirectory() as test_dir:
             source, dest = self.set_up_test(test_dir, self.source_files, self.dest_files)
-            sync_bidirectional(source, dest, None)
+            synced_bucket = sync_bidirectional(source, dest, None)
             self.assertEqual(get_files_in_directory(source), get_files_in_directory(dest))
+
+            # delete folder 1, now dest should not contain folder 1.
+            sf1 = os.path.join(source, 'folder1')
+            df1 = os.path.join(dest, 'folder1')
+            shutil.rmtree(sf1)
+            synced_bucket = sync_bidirectional(source, dest, synced_bucket.state())
+            self.assertFalse(os.path.exists(df1))
+
+            # add folder 3, now dest should contain folder 3.
+            sf3 = os.path.join(source, 'folder3')
+            df3 = os.path.join(dest, 'folder3')
+            os.makedirs(sf3)
+            synced_bucket = sync_bidirectional(source, dest, synced_bucket.state())
+            self.assertTrue(os.path.exists(df3))
+
+            # delete folder 3 from dest, now source should not have folder 3.
+            shutil.rmtree(df3)
+            synced_bucket = sync_bidirectional(source, dest, synced_bucket.state())
+            self.assertFalse(os.path.exists(sf3))
