@@ -371,7 +371,7 @@ class ProjectController:
         self._sync_workspace()
         self._pull_captures()
         if compose:
-            self.compose()
+            self.compose(incremental_update=True)
 
     def open_studio(self):
         studio_exe_path = os.path.join(self.game_directory, 'CharaStudio.exe')
