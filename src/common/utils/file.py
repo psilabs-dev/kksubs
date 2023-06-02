@@ -1,9 +1,11 @@
+from enum import Enum
 import logging
 import os
 from os.path import getmtime
+import subprocess
 
 import shutil
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from common.data.file import Bucket
 
@@ -36,12 +38,13 @@ def transfer(source:str, destination:str):
         shutil.copytree(source, destination, copy_function=shutil.copy2, dirs_exist_ok=True)
         return
 
-def sync_unidirectional(source, destination, filename_filter:List[str]=None):
+# old version of unidirectional sync.
+def _sync_unidirectional(source, destination, filename_filter:List[str]=None):
     if filename_filter is not None:
         for target in filename_filter:
             source_target = os.path.join(source, target)
             dest_target = os.path.join(destination, target)
-            sync_unidirectional(source_target, dest_target)
+            _sync_unidirectional(source_target, dest_target)
         return Bucket(path=source)
 
     # assumption that destination does not get changed.
@@ -55,8 +58,8 @@ def sync_unidirectional(source, destination, filename_filter:List[str]=None):
         source_bucket = Bucket(path=source)
         dest_bucket = Bucket(path=destination)
         
-        source_paths = set(source_bucket.files.keys())
-        dest_paths = set(dest_bucket.files.keys())
+        source_paths = set(source_bucket.get_files().keys())
+        dest_paths = set(dest_bucket.get_files().keys())
         
         in_both = source_paths.intersection(dest_paths) # conflict resolution. (see modified/unmodified)
         modified = set(filter(lambda path: source_bucket.files[path] > dest_bucket.files[path], in_both))
@@ -77,24 +80,45 @@ def sync_unidirectional(source, destination, filename_filter:List[str]=None):
         #     continue
     return source_bucket
 
-def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
-    bucket_a = Bucket(folder_1)
-    bucket_b = Bucket(folder_2)
+def sync_unidirectional(source, destination, filename_filter:List[str]=None, enable_log=False):
+    if filename_filter is not None:
+        for target in filename_filter:
+            source_target = os.path.join(source, target)
+            dest_target = os.path.join(destination, target)
+            sync_unidirectional(source_target, dest_target, enable_log=enable_log)
 
-    if previous_state is None:
-        previous_state = bucket_a.state()
+    # run robocopy without outputting stuff.
+    command = ['robocopy', source, destination, '/MIR']
+    if enable_log:
+        subprocess.run(command)
+    else:
+        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    last_sync_time = previous_state.get('time')
+class FileType(Enum):
 
-    paths_a = set(bucket_a.files.keys())
-    paths_b = set(bucket_b.files.keys())
-    paths_0 = set(previous_state.get('files'))
+    REGULAR_FILE = 1
+    DIRECTORY = 2
 
-    # demorgans law
+def sync_bidirectional_objects(
+        bucket_a:Bucket, 
+        bucket_b:Bucket, 
+        paths_a:Set[str], 
+        paths_b:Set[str], 
+        paths_0:Set[str], 
+        last_sync_time:int, 
+        file_type:FileType
+) -> Bucket:
+
+    # start of analysis
     # undeleted (but possibly modified)
     undeleted_paths = paths_a.intersection(paths_b).intersection(paths_0)
-    unmodified = set(filter(lambda path: max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time, undeleted_paths))
-    undeleted_modified = undeleted_paths.difference(unmodified)
+    if file_type == FileType.REGULAR_FILE:
+        unmodified = set(filter(lambda path: max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time, undeleted_paths))
+        undeleted_modified = undeleted_paths.difference(unmodified)
+
+    elif file_type == FileType.DIRECTORY:
+        unmodified = undeleted_paths
+        undeleted_modified = set()
 
     # deleted from exactly one bucket (undeleted one is possibly modified)
     deleted_in_one_bucket = paths_a.intersection(paths_0).difference(paths_b).union(
@@ -111,36 +135,109 @@ def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
 
     total_changes = len(undeleted_modified) + len(deleted_in_one_bucket) + len(added_in_one_bucket) + len(added_in_two_buckets)
     total_num_files = total_changes + len(unmodified)
-    logger.debug(f"Found {total_num_files} files and {total_changes} changes. ({os.path.basename(folder_1)})")
+    # end of analysis
+    # print(file_type, deleted_in_one_bucket, added_in_two_buckets, added_in_one_bucket, deleted)
 
+    # start of file operations
     # apply updates.
     for path in undeleted_paths:
-        if max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time:
-            continue
-        bucket_a.sync_most_recent(bucket_b, path)
+        if file_type == FileType.REGULAR_FILE:
+            if max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time:
+                continue
+            bucket_a.sync_most_recent(bucket_b, path)
+        if file_type == FileType.DIRECTORY:
+            pass
 
     for path in deleted_in_one_bucket:
         # check if undeleted one is modified.
-        if path in paths_a:
-            if bucket_a.files[path] > last_sync_time:
-                bucket_a.copy_to(bucket_b, path)
-                continue
-            else:
-                os.remove(os.path.join(bucket_a.path, path))
-        if path in paths_b:
-            if bucket_b.files[path] > last_sync_time:
-                bucket_b.copy_to(bucket_a, path)
-                continue
-            else:
-                os.remove(os.path.join(bucket_b.path, path))
+        if file_type == FileType.REGULAR_FILE:
+            if path in paths_a:
+                if bucket_a.files[path] > last_sync_time:
+                    logger.debug(f'Copy {path} to B.')
+                    bucket_a.copy_to(bucket_b, path)
+                    continue
+                else:
+                    logger.debug(f'Delete {path} from A')
+                    bucket_a.delete(path)
+            if path in paths_b:
+                if bucket_b.files[path] > last_sync_time:
+                    logger.debug(f'Copy {path} to A.')
+                    bucket_b.copy_to(bucket_a, path)
+                    continue
+                else:
+                    logger.debug(f'Delete {path} from B.')
+                    bucket_b.delete(path)
+        if file_type == FileType.DIRECTORY:
+            if path in paths_a:
+                if bucket_a.folders[path] > last_sync_time:
+                    logger.debug(f'Copy {path} to B.')
+                    bucket_b.create_folder(path)
+                    continue
+                else:
+                    logger.debug(f'Delete {path} from A')
+                    bucket_a.delete(path)
+            if path in paths_b:
+                if bucket_b.folders[path] > last_sync_time:
+                    logger.debug(f'Copy {path} to A.')
+                    bucket_a.create_folder(path)
+                    continue
+                else:
+                    logger.debug(f'Delete {path} from B.')
+                    bucket_b.delete(path)
     
     for path in added_in_two_buckets:
-        bucket_a.sync_most_recent(bucket_b, path)
+        if file_type == FileType.REGULAR_FILE:
+            logger.debug(f'Syncing {path} contents.')
+            bucket_a.sync_most_recent(bucket_b, path)
+        if file_type == FileType.DIRECTORY:
+            pass
 
     for path in added_in_one_bucket:
-        if path in paths_a:
-            bucket_a.copy_to(bucket_b, path)
-        else:
-            bucket_b.copy_to(bucket_a, path)
+        if file_type == FileType.REGULAR_FILE:
+            if path in paths_a:
+                logger.debug(f'Copy {path} to B.')
+                bucket_a.copy_to(bucket_b, path)
+            else:
+                logger.debug(f'Copy {path} to A.')
+                bucket_b.copy_to(bucket_a, path)
+        if file_type == FileType.DIRECTORY:
+            if path in paths_a:
+                logger.debug(f'Copy {path} to B.')
+                bucket_b.create_folder(path)
+            else:
+                logger.debug(f'Copy {path} to A.')
+                bucket_a.create_folder(path)
+
+    return
+
+def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
+
+    bucket_a = Bucket(folder_1)
+    bucket_b = Bucket(folder_2)
+
+    if previous_state is None:
+        previous_state = {
+            'files': [],
+            'folders': [],
+        }
+
+    rfiles_a = set(bucket_a.get_files().keys())
+    rfiles_b = set(bucket_b.get_files().keys())
+    rfiles_0 = set(previous_state.get('files'))
+
+    subfolders_a = set(bucket_a.get_folders().keys())
+    subfolders_b = set(bucket_b.get_folders().keys())
+    subfolders_0 = set(previous_state.get('folders'))
+
+    last_sync_time = previous_state.get('time')
+
+    sync_bidirectional_objects(bucket_a, bucket_b, subfolders_a, subfolders_b, subfolders_0, last_sync_time, FileType.DIRECTORY)
+    sync_bidirectional_objects(bucket_a, bucket_b, rfiles_a, rfiles_b, rfiles_0, last_sync_time, FileType.REGULAR_FILE)
+
+    # # for debugging
+    # proceed = input('Proceed: (Y)') == 'Y'
+    # if not proceed:
+    #     raise KeyboardInterrupt
+    # print('')
 
     return Bucket(folder_1)
