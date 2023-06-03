@@ -305,6 +305,7 @@ class ProjectController:
             self._unassign()
             self._assign(project_name)
             self._pull_to_subtitle_project()
+            self.subtitle_project_service.clear_subtitles(force=True)
             self.subtitle_project_service.create()
             self.sync()
 
@@ -384,6 +385,12 @@ class ProjectController:
         print(f'Launching Koikatsu Party; please wait...')
         subprocess.Popen(game_exe_path)
         return
+    
+    def open_game_directory(self):
+        if os.path.exists(self.game_directory):
+            os.startfile(self.game_directory)
+        else:
+            raise FileNotFoundError(self.game_directory)
     
     def open_output_folders(self, drafts:str=None):
         output_dir = self.get_output_directory()
