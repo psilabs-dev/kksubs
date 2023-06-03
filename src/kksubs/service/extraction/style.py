@@ -93,5 +93,5 @@ def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
     for style_data in styles_contents:
         _process_entity(style_data, styles)
     
-    logger.info(f'Obtained styles {styles.keys()}.')
+    logger.debug(f'Obtained styles {styles.keys()}.')
     return styles

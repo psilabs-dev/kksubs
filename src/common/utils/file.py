@@ -159,7 +159,7 @@ def save_most_recent_path(path_1, path_2) -> int:
         else:
             source, dest = path_2, path_1
         shutil.copy2(source, dest)
-        logger.info(f'Found change at {source}.')
+        logger.debug(f'Found change at {source}.')
 
     return output
 
@@ -310,8 +310,8 @@ def sync_bidirectional(folder_1, folder_2, previous_state:Dict) -> Bucket:
 
     folder_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, subfolders_a, subfolders_b, subfolders_0, last_sync_time, FileType.DIRECTORY)
     file_deltas = _get_bidirectional_deltas(bucket_a, bucket_b, rfiles_a, rfiles_b, rfiles_0, last_sync_time, FileType.REGULAR_FILE)
-    logger.info(f'Obtained folder deltas: {folder_deltas}')
-    logger.info(f'Obtained file deltas:   {file_deltas}')
+    logger.debug(f'Obtained folder deltas: {folder_deltas}')
+    logger.debug(f'Obtained file deltas:   {file_deltas}')
 
     # check certain things
     # if a folder is deleted in X but a file is added in Y/folder, then the folder cannot be deleted.
