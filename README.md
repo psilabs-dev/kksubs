@@ -4,7 +4,7 @@
 
 > Command line tools to automate simple subtitle processing for Koikatsu stories.
 
-**Basic function**: Given a folder of *images* and a text file called a *draft* (which contains a list of *subtitles* we want to apply to a specific image), the program will automatically apply each subtitle to its corresponding image, and save that image to an output directory.
+**Basic function**: Given a folder of *images* and a text file called a *draft* (which contains a list of *subtitles* we want to apply to a specific image), the program will automatically apply each subtitle to its corresponding image, and save the subtitled images to an output directory.
 
 ![processed-image](demo.png)
 
