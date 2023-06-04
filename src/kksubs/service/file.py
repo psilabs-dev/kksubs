@@ -1,9 +1,9 @@
 import os
 from typing import Dict, List, Union
 import yaml
-from kksubs.data.file import Bucket
+from common.data.file import Bucket
 
-from kksubs.utils.file import transfer, sync_bidirectional, sync_unidirectional, save_most_recent_path
+from common.utils.file import transfer, sync_bidirectional, sync_unidirectional, save_most_recent_path
 
 class FileService:
 

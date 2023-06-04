@@ -2,30 +2,36 @@ import logging
 import os
 from typing import List, Optional
 import yaml
-from kksubs.exceptions import InvalidProjectException
+from common.exceptions import InvalidProjectException
+import subprocess
+from packaging import version
+import time
+
+from common.import_utils import get_kksubs_version
 from kksubs.service.file import FileService
-from kksubs.service.studio_project import StudioProjectService
+from kkp.service.studio_project import StudioProjectService
 
 from kksubs.service.sub_project import SubtitleProjectService
-from kksubs.view.project import ProjectView
-from kksubs.watcher.project import ProjectWatcher
-from kksubs.watcher.subtitle import SubtitleWatcher
-from kksubs.utils.coalesce import coalesce
-from kksubs.utils.file import *
-from kksubs.utils.decorators import *
+from kkp.view.project import ProjectView
+from kkp.watcher.project import ProjectWatcher
+from common.utils.coalesce import coalesce
+from common.utils.file import *
+from common.utils.decorators import *
 
-METADATA_FILE = 'kksubs.yaml'
+# config information
+CONFIG_FILE_NAME = 'config.yaml'
 GAME_DIRECTORY_KEY = 'game-directory'
 LIBRARY_KEY = 'library-directory'
 WORKSPACE_KEY = 'workspace-directory'
+
+# data information
+DATA_FILE_NAME = 'data.yaml'
 CURRENT_PROJECT_KEY = 'current-project'
-
 SYNC_TIME_KEY = 'last-synced-time'
-
 SUBTITLE_SYNC_STATE_KEY = 'subtitle-sync-state'
 STUDIO_SYNC_STATE_KEY = 'studio-sync-state'
-
 LIST_PROJECT_HISTORY_KEY = 'list-project-history'
+VERSION_KEY = 'version'
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +41,10 @@ class ProjectController:
             self,
             game_directory:str=None,
             library:str=None,
-            metadata_file_path:str=None,
+            config_file_path:str=None,
             workspace:str=None,
 
+            data_file_path:str=None,
             subtitle_project_service:SubtitleProjectService=None,
             studio_project_service:StudioProjectService=None,
             project_view:ProjectView=None,
@@ -46,12 +53,13 @@ class ProjectController:
     ):
         
         logger.info('Creating project controller...')
-        self.metadata_file_path = metadata_file_path
+        self.config_file_path = config_file_path
         self.game_directory = game_directory
         self.library = library
         self.workspace = workspace
         self.current_project = current_project
 
+        self.data_file_path = data_file_path
         self.subtitle_sync_state = None
         self.studio_sync_state = None
         self.last_sync_time = None
@@ -64,33 +72,50 @@ class ProjectController:
 
         self.list_project_history:List[str] = None
 
-    def _get_metadata_path(self, metadata_file_path:str=None):
-        return coalesce(metadata_file_path, self.metadata_file_path)
+    def _get_config_file_path(self, config_path:str=None):
+        return coalesce(config_path, self.config_file_path)
 
-    def _read_metadata(self, metadata_file_path:str=None) -> Dict:
-        metadata_file_path = self._get_metadata_path(metadata_file_path=metadata_file_path)
-        if not os.path.exists(metadata_file_path):
+    def _get_data_file_path(self, data_file_path:str=None):
+        return coalesce(data_file_path, self.data_file_path)
+
+    def _read_config(self, config_file_path:str=None) -> Dict:
+        config_file_path = self._get_config_file_path(config_path=config_file_path)
+        if not os.path.exists(config_file_path):
             return dict()
-        with open(metadata_file_path, 'r') as reader:
-            return yaml.safe_load(reader)
+        with open(config_file_path, 'r') as reader:
+            return coalesce(yaml.safe_load(reader), dict())
         
-    def _write_metadata(self, metadata_file_path:str=None):
+    def _write_config(self, config_path:str=None):
         if self.workspace is None:
             return
-        data = {
+        config = {
             GAME_DIRECTORY_KEY: self.game_directory,
             LIBRARY_KEY: self.library,
             WORKSPACE_KEY: self.workspace,
-            CURRENT_PROJECT_KEY: self.current_project,
+        }
+        config_path = self._get_config_file_path(config_path=config_path)
+        with open(config_path, 'w') as writer:
+            return yaml.safe_dump(config, writer)
 
+    def _read_data(self, data_path:str=None) -> Dict:
+        data_file_path = self._get_data_file_path(data_file_path=data_path)
+        if not os.path.exists(data_file_path):
+            return dict()
+        with open(data_file_path, 'r') as reader:
+            return coalesce(yaml.safe_load(reader), dict())
+
+    def _write_data(self, data_path:str=None):
+        if self.workspace is None:
+            return
+        data = {
+            CURRENT_PROJECT_KEY: self.current_project,
             SUBTITLE_SYNC_STATE_KEY: self.subtitle_sync_state,
             STUDIO_SYNC_STATE_KEY: self.studio_sync_state,
-            SYNC_TIME_KEY: self.last_sync_time,
-
             LIST_PROJECT_HISTORY_KEY: self.list_project_history,
+            VERSION_KEY: get_kksubs_version(),
         }
-        metadata_file_path = self._get_metadata_path(metadata_file_path=metadata_file_path)
-        with open(metadata_file_path, 'w') as writer:
+        data_path = self._get_data_file_path(data_file_path=data_path)
+        with open(data_path, 'w') as writer:
             return yaml.safe_dump(data, writer)
 
     def configure(
@@ -102,38 +127,64 @@ class ProjectController:
     ):
         # configures controller.
         # retrieve metadata.
-        metadata_path = os.path.join(metadata_directory, METADATA_FILE)
-        metadata = self._read_metadata(metadata_path)
+        config_path = os.path.join(metadata_directory, CONFIG_FILE_NAME)
+        data_path = os.path.join(metadata_directory, DATA_FILE_NAME)
 
-        metadata[GAME_DIRECTORY_KEY] = coalesce(game_directory, metadata.get(GAME_DIRECTORY_KEY))
-        metadata[LIBRARY_KEY] = coalesce(library, metadata.get(LIBRARY_KEY))
-        metadata[WORKSPACE_KEY] = coalesce(workspace, metadata.get(WORKSPACE_KEY))
-        metadata[CURRENT_PROJECT_KEY] = metadata.get(CURRENT_PROJECT_KEY)
-        metadata[SUBTITLE_SYNC_STATE_KEY] = metadata.get(SUBTITLE_SYNC_STATE_KEY)
-        metadata[STUDIO_SYNC_STATE_KEY] = metadata.get(STUDIO_SYNC_STATE_KEY)
-        metadata[SYNC_TIME_KEY] = metadata.get(SYNC_TIME_KEY)
-        
-        metadata[LIST_PROJECT_HISTORY_KEY] = metadata.get(LIST_PROJECT_HISTORY_KEY)
+        config_info = self._read_config(config_path)
+        data_info = self._read_data(data_path)
+
+        config_info[GAME_DIRECTORY_KEY] = coalesce(game_directory, config_info.get(GAME_DIRECTORY_KEY))
+        config_info[LIBRARY_KEY] = coalesce(library, config_info.get(LIBRARY_KEY))
+        config_info[WORKSPACE_KEY] = coalesce(workspace, config_info.get(WORKSPACE_KEY))
+
+        data_info[CURRENT_PROJECT_KEY] = data_info.get(CURRENT_PROJECT_KEY)
+        data_info[SUBTITLE_SYNC_STATE_KEY] = data_info.get(SUBTITLE_SYNC_STATE_KEY)
+        data_info[STUDIO_SYNC_STATE_KEY] = data_info.get(STUDIO_SYNC_STATE_KEY)
+        data_info[SYNC_TIME_KEY] = data_info.get(SYNC_TIME_KEY)
+        data_info[LIST_PROJECT_HISTORY_KEY] = data_info.get(LIST_PROJECT_HISTORY_KEY)
+        data_info[VERSION_KEY] = data_info.get(VERSION_KEY)
+
+        # version comparison
+        version_from_data = data_info.get(VERSION_KEY)
+        current_version = get_kksubs_version()
+        if version_from_data is None or version.parse(version_from_data) < version.parse(current_version):
+            print(f'A different version {version_from_data} is detected (current version {current_version}).')
+
+            # check for, import, and remove old data files.
+            kks_data_file = os.path.join(metadata_directory, 'kksubs.yaml')
+            if os.path.exists(kks_data_file):
+                confirm = input('A kksubs.yaml file is detected. Import settings from that file? This will delete the kksubs.yaml file and create new config files. (Y) ') == "Y"
+                if confirm:
+                    previous_data = self._read_data(data_path=kks_data_file)
+
+                    for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
+                        config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
+
+                    for data_key in [CURRENT_PROJECT_KEY, SUBTITLE_SYNC_STATE_KEY, STUDIO_SYNC_STATE_KEY, SYNC_TIME_KEY, LIST_PROJECT_HISTORY_KEY]:
+                        data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
+                    logger.info('Deleting old data file.')
+                    os.remove(kks_data_file)
 
         for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
-            path = metadata.get(key)
+            path = config_info.get(key)
             if path is None:
                 raise NotImplementedError(key)
             if not os.path.exists(path):
                 raise FileNotFoundError(path)
-            metadata[key] = os.path.realpath(path)
+            config_info[key] = os.path.realpath(path)
         
-        self.metadata_file_path = metadata_path
-        self.game_directory = metadata.get(GAME_DIRECTORY_KEY)
-        self.library = metadata.get(LIBRARY_KEY)
-        self.workspace = metadata.get(WORKSPACE_KEY)
-        self.current_project = metadata.get(CURRENT_PROJECT_KEY)
+        self.config_file_path = config_path
+        self.data_file_path = data_path
 
-        self.subtitle_sync_state = metadata.get(SUBTITLE_SYNC_STATE_KEY)
-        self.studio_sync_state = metadata.get(STUDIO_SYNC_STATE_KEY)
-        self.last_sync_time = metadata.get(SYNC_TIME_KEY)
+        self.game_directory = config_info.get(GAME_DIRECTORY_KEY)
+        self.library = config_info.get(LIBRARY_KEY)
+        self.workspace = config_info.get(WORKSPACE_KEY)
 
-        self.list_project_history = metadata.get(LIST_PROJECT_HISTORY_KEY)
+        self.current_project = data_info.get(CURRENT_PROJECT_KEY)
+        self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
+        self.studio_sync_state = data_info.get(STUDIO_SYNC_STATE_KEY)
+        self.last_sync_time = data_info.get(SYNC_TIME_KEY)
+        self.list_project_history = data_info.get(LIST_PROJECT_HISTORY_KEY)
 
         self.subtitle_project_service = SubtitleProjectService(project_directory=self.workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
@@ -202,7 +253,7 @@ class ProjectController:
                 self.file_service.sync_unidirectional(
                     kksubs_project_path, 
                     self.workspace, 
-                    filename_filter=['drafts', 'style.yml', 'style.yaml', 'output']
+                    filename_filter=['drafts', 'styles.yml', 'styles.yaml', 'output']
                 )
         else:
             raise InvalidProjectException(project_name)
@@ -217,6 +268,9 @@ class ProjectController:
             if project_name.isdigit() and int(project_name) < len(previous_projects):
                 project_name = previous_projects[int(project_name)]
         return project_name
+    
+    def get_output_directory(self):
+        return self.subtitle_project_service.get_output_directory()
 
     def checkout(self, project_name:str, new_branch:bool=False):
 
@@ -251,6 +305,7 @@ class ProjectController:
             self._unassign()
             self._assign(project_name)
             self._pull_to_subtitle_project()
+            self.subtitle_project_service.clear_subtitles(force=True)
             self.subtitle_project_service.create()
             self.sync()
 
@@ -290,9 +345,9 @@ class ProjectController:
         display()
         self.list_project_history = projects
 
-    def delete(self, project_name:str):
+    def delete(self, project_name:str, safe:bool=True):
         project_name = self._get_project_from_history(project_name)
-        self.studio_project_service.delete_project(project_name, safe=False)
+        self.studio_project_service.delete_project(project_name, safe=safe)
         if project_name == self.current_project:
             self._unassign()
             self.subtitle_project_service.delete_project()
@@ -317,9 +372,44 @@ class ProjectController:
         self._sync_workspace()
         self._pull_captures()
         if compose:
-            self.compose()
+            self.compose(incremental_update=True)
+
+    def open_studio(self):
+        studio_exe_path = os.path.join(self.game_directory, 'CharaStudio.exe')
+        print(f'Launching Studio; please wait...')
+        subprocess.Popen(studio_exe_path)
+        return
+
+    def open_game(self):
+        game_exe_path = os.path.join(self.game_directory, 'Koikatsu Party.exe')
+        print(f'Launching Koikatsu Party; please wait...')
+        subprocess.Popen(game_exe_path)
+        return
+    
+    def open_game_directory(self):
+        if os.path.exists(self.game_directory):
+            os.startfile(self.game_directory)
+        else:
+            raise FileNotFoundError(self.game_directory)
+    
+    def open_output_folders(self, drafts:str=None):
+        output_dir = self.get_output_directory()
+        if drafts is not None and not drafts:
+            for draft in drafts:
+                draft_folder = os.path.join(output_dir, draft)
+                if os.path.exists(draft_folder):
+                    os.startfile(draft_folder)
+                else:
+                    raise FileNotFoundError(draft_folder)
+                return
+        
+        folders = os.listdir(output_dir)
+        for folder in folders:
+            folder = os.path.join(output_dir, folder)
+            os.startfile(folder)
 
     def close(self):
         # persist changes to metadata
-        self._write_metadata()
+        self._write_config()
+        self._write_data()
         logger.info('Closing project controller...')

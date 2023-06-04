@@ -15,7 +15,7 @@ def _get_inherited_style_ids(input_style_id) -> List[str]:
     return []
 
 def _process_single_style(style_data:Dict, styles:Dict[str, Style]):
-    style = Style.from_dict(style_data)
+    style = Style.deserialize(style_data)
 
     # style inheritance logic.
     parent_style_ids = _get_inherited_style_ids(style.style_id)
@@ -49,12 +49,12 @@ def _process_layer_data(layer_data, matrix:StyleMatrix) -> Layer:
         if row_id is not None:
             layer = STYLE_ROW_ENUM.get(row_id)
         elif style_data_list is not None and len(style_data_list) > 0:
-            style_list = list(map(Style.from_dict, style_data_list))
+            style_list = list(map(Style.deserialize, style_data_list))
             layer = StyleRow(styles=style_list)
         matrix.add_row(layer)
         
     elif is_context:
-        layer:ContextLayer = ContextLayer.from_dict(layer_data.get('context'))
+        layer:ContextLayer = ContextLayer.deserialize(layer_data.get('context'))
         matrix.add_context(layer)
 
     else:
@@ -93,5 +93,5 @@ def extract_styles(styles_contents:List[dict]) -> Dict[str, Style]:
     for style_data in styles_contents:
         _process_entity(style_data, styles)
     
-    logger.info(f'Obtained styles {styles.keys()}.')
+    logger.debug(f'Obtained styles {styles.keys()}.')
     return styles

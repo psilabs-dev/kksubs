@@ -19,6 +19,7 @@ def command_line():
 
     parser.add_argument('-p', '--project', default='.', help='Specify path to the project.')
     parser.add_argument('--log', default='warning', help='Set logging level.')
+    parser.add_argument('-v', '--version', action='store_true', help='Get kksubs version.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -29,6 +30,10 @@ def command_line():
     activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
 
     compose_parser = subparsers.add_parser('compose', help='Compose subtitles once.')
+    compose_parser.add_argument('--show', action='store_true', help='Open folders in output directory with file explorer.')
+
+    show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
+    show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
 
     for subparser in [activate_parser, compose_parser]:
         subparser.add_argument('-d', '--draft', default=None)
@@ -54,6 +59,12 @@ def command_line():
     log_level = 'info' if command == 'activate' else args.log
     logging.basicConfig(level=log_levels.get(log_level))
 
+    get_version:bool = args.version
+    if get_version:
+        from common.import_utils import get_kksubs_version
+        print(f'kksubs version {get_kksubs_version()}')
+        return
+
     if command == 'init':
         controller.create()
 
@@ -75,15 +86,23 @@ def command_line():
                 allow_incremental_updating=True,
                 watch=True
             )
-        return controller.add_subtitles(
+        
+        controller.add_subtitles(
             drafts=draft, prefix=args.prefix, 
             allow_multiprocessing=not disable_multiprocessing,
             allow_incremental_updating=incremental_update,
             watch=False
         )
 
+        if args.show:
+            controller.open_output_folders()
+
     if command == 'clear':
         controller.clear()
+
+    if command == 'show':
+        drafts = args.drafts
+        controller.open_output_folders(drafts=drafts)
 
     if command is None:
         controller.info()

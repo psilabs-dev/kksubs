@@ -1,14 +1,6 @@
-from abc import ABC, abstractclassmethod, abstractmethod
+from abc import abstractclassmethod, abstractmethod
 
-class RepresentableData(ABC):
-
-    def __repr__(self) -> str:
-        return str(self.__dict__)
-
-    def __eq__(self, __value: object) -> bool:
-        if __value is None:
-            return False
-        return self.__dict__ == __value.__dict__
+from common.data.representable import RepresentableData
 
 class BaseData(RepresentableData):
     field_name:str
@@ -18,7 +10,7 @@ class BaseData(RepresentableData):
         ...
 
     @abstractclassmethod
-    def from_dict(cls, style_dict):
+    def deserialize(cls, style_dict):
         ...
     
     @abstractmethod

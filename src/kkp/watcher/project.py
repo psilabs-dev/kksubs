@@ -1,6 +1,6 @@
 
 
-from kksubs.service.studio_project import StudioProjectService
+from kkp.service.studio_project import StudioProjectService
 from kksubs.service.sub_project import SubtitleProjectService
 from kksubs.watcher.subtitle import SubtitleWatcher
 

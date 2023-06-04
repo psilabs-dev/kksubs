@@ -1,12 +1,9 @@
 import logging
 import os
-import time
-from typing import Dict, List
-import traceback
 import datetime
 
 from kksubs.service.sub_project import SubtitleProjectService
-from kksubs.watcher.file_change import FileChangeWatcher
+from common.watcher.file_change import FileChangeWatcher
 
 logger = logging.getLogger(__name__)
 

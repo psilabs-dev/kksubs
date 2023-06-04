@@ -1,28 +1,35 @@
-# command line tool
+# KKP Command Line Tool
 
-Command line tools.
+`kkp` (Koikatsu Projects) is a command line tool that integrates subtitle projects with the Koikatsu Party game in a more integrated environment. 
 
-* `kkp`: for subtitling images and general project management in an integrated environment.
-* `kksubs`: for only subtitling images.
+A "studio project" refers to the subtitle project along with the `UserData` folder it is associated with. `kkp` is thus a manager of studio projects.
 
-# KK Projects/`kkp`
+Main features:
 
-`kkp` is a subtitling/project management tool for Koikatsu projects. Requires prior configuration to run successfully.
+* Create a subtitle project from the current game directory
+    * Add subtitles on images in the `UserData/cap` folder
+* Save/load multiple studio projects to/from a library
 
-## Initialize
+## Configure
 ```bash
 kkp --workspace [workspace] --game [game-directory] --library [library-directory]
 ```
-Initializes the `kksubs` project. Configuration lives in `kksubs.yaml` file.
+
+Configures the `kkp` command line tool. Configuration is stored in `[working-directory]/config.yaml`, while data is stored in `[working-directory]/data.yaml`.
 
 The `[game-directory]` is the game directory which contains the `UserData` folder. The `[workspace]` is the folder where subtitle-related objects go (e.g. `images`, `output`, `drafts`, `styles.yml`).
+
+### Example
+```
+kkp --workspace workspace --game "C:\Users\user\Games\Koikatsu Party" --library library
+```
 
 ---
 ## Create Project
 ```bash
 kkp create [project-name]
 ```
-Makes a copy of `UserData` in the game directory into the library, and also copies the renders in `UserData/cap` to `[workspace]/images`. This is known as the "current project". Additionally, creates a `kksubs` subtitling project:
+Makes a copy of `UserData` in the game directory into the library, and also copies the renders in `UserData/cap` to `[workspace]/images`. This is known as the "current project". Additionally, creates a subtitle project:
 ```
 - [workspace]
     - images
@@ -61,7 +68,7 @@ Change the current project to another project in the library. This replaces the 
 
 Checkout to a new project from the current one like git. (This will create a project in the same directory as the current project.)
 ```bash
-kkp checkout [project-name] --branch
+kkp checkout --branch [project-name]
 ```
 Combine `list` and `checkout` to checkout based on numbers.
 ```bash
@@ -70,6 +77,25 @@ kkp list -p *world*
 kkp checkout 0
 # checkout project hello/world
 ```
+
+## Execute Programs/Open Folders
+
+```
+kkp game
+```
+Run Koikatsu Party.
+```
+kkp studio
+```
+Run Chara Studio.
+```
+kkp game-folder
+```
+Open Koikatsu Party folder with explorer.
+```
+kkp show
+```
+Open subtitled image folders with explorer.
 
 ## Delete Project
 ```bash
@@ -98,36 +124,6 @@ Persistent data used to accelerate subtitling is stored in the `[workspace]/.kks
 
 ## Clear 
 ```bash
-kksubs clear
+kkp clear
 ```
 Delete outputs and the `.kksubs` directory within the workspace.
-
-# KK Subtitles/`kksubs`
-`kksubs` is exclusively a subtitling tool. Does not require prior configuration, nor a game directory. Separate from `kkp`.
-
-## Initialize Subtitle Project
-```bash
-kksubs --project [project-directory] init
-```
-Create a blank subtitling project with structure
-```
-- images
-- drafts
-- output
-- styles.yml
-```
-Does not override existing project structure. Defaults to current directory.
-
-## Rename
-```bash
-kksubs --project [project-directory] rename
-```
-Renames the images in the `images` directory. Also renames the image keys in any draft.
-
-## Activate/Compose/Clear
-```
-kksubs --project [project-directory] compose
-kksubs --project [project-directory] activate
-kksubs --project [project-directory] clear
-```
-Like `kkp`, `kksubs` is also equipped with `compose`, `activate` and `clear` commands, which serve the same purpose. Since there is no game directory, `activate` will not search for changes there.

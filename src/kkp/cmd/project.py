@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from kksubs.controller.project import ProjectController
+from kkp.controller.project import ProjectController
 
 log_levels = {
     "debug": logging.DEBUG,
@@ -22,6 +22,7 @@ def command_line():
     parser.add_argument('--library', type=str, help='Specify path to library.')
     parser.add_argument('--workspace', type=str, help='Specify location for subtitle workspace.')
     parser.add_argument('--log', type=str, default='warning', help='Set logging level.')
+    parser.add_argument('-v', '--version', action='store_true', help='Get kksubs version.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -46,6 +47,15 @@ def command_line():
     delete_parser.add_argument('project_name', type=str, help='Name of project to delete.')
 
     sync_parser = subparsers.add_parser('sync', help='Sync current project with library.')
+
+    studio_parser = subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
+
+    game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
+
+    game_folder_parser = subparsers.add_parser('game-folder', help='Open Koikatsu Party game folder.')
+
+    show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
+    show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
     
     args = parser.parse_args()
     command = args.command
@@ -53,6 +63,13 @@ def command_line():
     controller = ProjectController()
     log_level = 'info' if command == 'activate' else args.log
     logging.basicConfig(level=log_levels.get(log_level))
+
+    get_version = args.version
+    if get_version:
+        from common.import_utils import get_kksubs_version
+        print(f'kksubs version {get_kksubs_version()}')
+        return
+
     metadata_directory = args.metadata
     game_directory = args.game_directory
     library = args.library
@@ -89,6 +106,20 @@ def command_line():
 
     if command == 'sync':
         controller.sync()
+
+    if command == 'studio':
+        controller.open_studio()
+
+    if command == 'game':
+        controller.open_game()
+
+    if command == 'game-folder':
+        controller.open_game_directory()
+
+    if command == 'show':
+        drafts = args.drafts
+        controller.open_output_folders(drafts=drafts)
+
     # END PROJECT COMMANDS
 
     if command is None:
