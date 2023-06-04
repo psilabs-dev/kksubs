@@ -393,6 +393,12 @@ class ProjectController:
         subprocess.Popen(game_exe_path)
         return
     
+    def open_library_directory(self):
+        if os.path.exists(self.library):
+            os.startfile(self.library)
+        else:
+            raise FileNotFoundError(self.library)
+
     def open_game_directory(self):
         if os.path.exists(self.game_directory):
             os.startfile(self.game_directory)
