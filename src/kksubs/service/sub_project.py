@@ -160,6 +160,10 @@ class SubtitleProjectService:
     def get_state_path(self, draft_name:str):
         # draft name without extension.
         return os.path.join(self.state_directory, draft_name)
+    
+    def get_state_path_v2(self, draft_name:str):
+        # draft state as yaml file.
+        return os.path.join(self.state_directory, draft_name) + '.yaml'
 
     def get_draft_paths(self):
         return list(map(lambda draft_id: os.path.join(self.drafts_dir, draft_id), self.get_draft_ids()))
@@ -229,6 +233,43 @@ class SubtitleProjectService:
         #     text_path = os.path.join(self.drafts_dir, text_id)
         #     update_images_in_textpath(text_path, image_paths, new_image_paths=new_image_paths)
 
+    def read_previous_state(self, state_path:str) -> Dict[str, SubtitleGroup]:
+        with open(state_path, "rb") as reader:
+            logger.info(f"Reading previous state from {state_path}")
+            try:
+                previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
+                return previous_draft_state
+            except AttributeError:
+                logger.error(f"""
+An attribute error occurred while reading previous state path.
+This usually indicates that the state path is written by an outdated program.
+The program will now delete the previous state and try again...
+
+Original error message: {traceback.format_exc()} 
+                """)
+                previous_draft_state = dict()
+                os.remove(state_path)
+                raise RetryWatcherPrompt
+            
+    def save_current_state(self, state_path, current_state:Dict[str, SubtitleGroup]):
+        with open(state_path, "wb") as writer:
+            logger.info(f"Saving current subtitle state to {state_path}")
+            pickle.dump(current_state, writer)
+            
+    # def read_previous_state_v2(self, state_path_v2:str) -> Dict[str, SubtitleGroup]:
+    #     # extract subtitle groups from yaml file.
+    #     previous_state = dict()
+    #     with open(state_path_v2, 'r') as yaml_reader:
+    #         state_data:Dict = yaml.safe_load(yaml_reader)
+    #         for image_id, subtitle_group_data in state_data.items():
+    #             previous_state[image_id] = SubtitleGroup.deserialize(subtitle_group_data)
+    #     return previous_state
+    
+    # def save_current_state_v2(self, state_path, current_state:Dict[str, SubtitleGroup]):
+    #     with open(state_path, 'w') as yaml_writer:
+    #         data = {key:value.serialize() for key, value in current_state.items()}
+    #         yaml.safe_dump(data, yaml_writer)
+
     def incremental_update(self, draft_name:str, subtitle_group_by_image_id:Dict[str, SubtitleGroup]) -> Dict[str, SubtitleGroup]:
         # filter subgroup dict by incremental update
         draft_output_dir = os.path.join(self.outputs_dir, draft_name)
@@ -237,6 +278,7 @@ class SubtitleProjectService:
 
         filtered_subtitle_group_by_image_id:Dict[str, SubtitleGroup] = dict()
         state_path = self.get_state_path(draft_name)
+        # state_path_v2 = self.get_state_path_v2(draft_name)
 
         if not os.path.exists(self.metadata_directory):
             logger.info(f"Creating additional data directory.")
@@ -244,26 +286,18 @@ class SubtitleProjectService:
         if not os.path.exists(self.state_directory):
             logger.info(f"Creating states directory.")
             os.mkdir(self.state_directory)
+
         if not os.path.exists(state_path):
             logger.info("No previous state for this draft is found.")
             previous_draft_state:Dict[str, SubtitleGroup] = dict()
         else:
+            previous_draft_state = self.read_previous_state(state_path)
 
-            with open(state_path, "rb") as reader:
-                logger.info(f"Reading previous state from {state_path}")
-                try:
-                    previous_draft_state:Dict[str, SubtitleGroup] = pickle.load(reader)
-                except AttributeError:
-                    logger.error(f"""
-An attribute error occurred while reading previous state path.
-This usually indicates that the state path is written by an outdated program.
-The program will now delete the previous state and try again...
-
-Original error message: {traceback.format_exc()} 
-                    """)
-                    previous_draft_state = dict()
-                    os.remove(state_path)
-                    raise RetryWatcherPrompt
+        # if not os.path.exists(state_path_v2):
+        #     logger.info('No previous state v2 for this draft is found.')
+        #     previous_draft_state:Dict[str, SubtitleGroup] = dict()
+        # else:
+        #     previous_draft_state = self.read_previous_state_v2(state_path_v2)
 
         # check image deltas
         # for indeterminate sets, check for two things:
@@ -312,9 +346,8 @@ Original error message: {traceback.format_exc()}
         for image_id in d2.union(d5):
             filtered_subtitle_group_by_image_id[image_id] = subtitle_group_by_image_id[image_id]
 
-        with open(state_path, "wb") as writer:
-            logger.info(f"Saving current subtitle state to {state_path}")
-            pickle.dump(subtitle_group_by_image_id, writer)
+        self.save_current_state(state_path, subtitle_group_by_image_id)
+        # self.save_current_state_v2(state_path_v2, subtitle_group_by_image_id)
 
         return filtered_subtitle_group_by_image_id
 
