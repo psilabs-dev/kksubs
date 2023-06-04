@@ -75,7 +75,7 @@ class ProjectController:
         self.list_project_history:List[str] = None
         self.list_project_limit:int = 10
         self.recent_projects:List[str] = None
-        self.recent_projects_limit:int = 3
+        self.recent_projects_limit:int = 5
 
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
@@ -218,13 +218,16 @@ class ProjectController:
         )
 
     @spacing
-    def info(self):
+    def info(self, show_recent_projects:bool=False):
         print(f'Game:                {self.game_directory}')
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
 
         projects = self.list_projects(pattern='*', limit=self.list_project_limit, update_quick_access=False)
-        recent_projects = self.list_recent_projects(limit=self.recent_projects_limit, start_index=len(projects), update_quick_access=False)
+        if show_recent_projects:
+            recent_projects = self.list_recent_projects(limit=self.recent_projects_limit, start_index=len(projects), update_quick_access=False)
+        else:
+            recent_projects = list()
         try:
             self.set_quick_access(projects+recent_projects)
         except:
