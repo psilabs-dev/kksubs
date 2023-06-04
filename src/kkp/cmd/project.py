@@ -23,6 +23,7 @@ def command_line():
     parser.add_argument('--workspace', type=str, help='Specify location for subtitle workspace.')
     parser.add_argument('--log', type=str, default='warning', help='Set logging level.')
     parser.add_argument('-v', '--version', action='store_true', help='Get kksubs version.')
+    parser.add_argument('-r', '--recent', action='store_true', help='Show recent projects.')
 
     subparsers = parser.add_subparsers(dest='command')
 
@@ -128,6 +129,6 @@ def command_line():
     # END PROJECT COMMANDS
 
     if command is None:
-        controller.info() # display information, version, current project
+        controller.info(args.recent) # display information, version, current project
 
     controller.close()
