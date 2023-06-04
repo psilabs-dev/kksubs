@@ -76,7 +76,7 @@ class ProjectController:
         self.list_project_history:List[str] = None
         self.list_project_limit:int = 10
         self.recent_projects:List[str] = None
-        self.recent_projects_limit:int = 10
+        self.recent_projects_limit:int = 3
 
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
@@ -224,8 +224,12 @@ class ProjectController:
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
 
-        # self.list_projects(pattern='*', limit=self.list_project_limit)
-        self.list_recent_projects(limit=self.recent_projects_limit)
+        projects = self.list_projects(pattern='*', limit=self.list_project_limit, update_quick_access=False)
+        recent_projects = self.list_recent_projects(limit=self.recent_projects_limit, start_index=len(projects), update_quick_access=False)
+        try:
+            self.set_quick_access(projects+recent_projects)
+        except:
+            raise Exception((projects, recent_projects))
 
         current_project = self.current_project
         if self.studio_project_service.is_project(current_project):
@@ -284,13 +288,15 @@ class ProjectController:
 
     def _update_recent_projects(self, project_name):
         # updates recent project list with project name.
-        if self.recent_projects is None:
-            self.recent_projects = list()
-        if project_name in self.recent_projects:
-            self.recent_projects.remove(project_name)
-        self.recent_projects.insert(0, project_name)
-        while len(self.recent_projects) > 10:
-            self.recent_projects.pop()
+        recent_projects = self.get_recent_projects()
+        if recent_projects is None:
+            recent_projects = list()
+        if project_name in recent_projects:
+            recent_projects.remove(project_name)
+        recent_projects.insert(0, project_name)
+        while len(recent_projects) > 10:
+            recent_projects.pop()
+        self.set_recent_projects(recent_projects)
 
     def _remove_from_recent_projects(self, project_name):
         if project_name in self.recent_projects:
@@ -387,16 +393,21 @@ class ProjectController:
         
         return self.recent_projects
 
+    def set_recent_projects(self, recent_projects:List[str]):
+        self.recent_projects = recent_projects
+
     def set_quick_access(self, project_list:List[str]):
         self.quick_access = project_list
 
-    def list_recent_projects(self, limit:Optional[int]=None):
+    def list_recent_projects(self, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True) -> List[str]:
         logger.info(f'Listing recent projects.')
+        if start_index is None:
+            start_index = 0
 
         recent_projects = self.get_recent_projects()
         if not recent_projects:
             print(f'No recent projects found.')
-            return
+            return list()
         num_projects = len(recent_projects)
         
         if limit is None:
@@ -408,16 +419,22 @@ class ProjectController:
 
         @spacing
         def display():
-            print('List of recent projects:\n')
+            print('Recent projects:\n')
             for i, project in enumerate(recent_projects):
-                print(f"[{i}] {project}")
+                print(f"[{i+start_index}] {project}")
             if limit is not None and limit < num_projects:
                 print('   ...')
         display()
-        self.set_quick_access(recent_projects)
+        
+        if update_quick_access:
+            self.set_quick_access(recent_projects)
 
-    def list_projects(self, pattern:str, limit:Optional[int]=None):
+        return recent_projects
+
+    def list_projects(self, pattern:str, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True) -> List[str]:
         logger.info(f"Listing projects with pattern {pattern}.")
+        if start_index is None:
+            start_index = 0
         projects = self.studio_project_service.list_projects(pattern=pattern)
         num_projects = len(projects)
 
@@ -437,12 +454,16 @@ class ProjectController:
         def display():
             print('List of projects:\n')
             for i, project in enumerate(projects):
-                print(f"[{i}] {project}")
+                print(f"[{i+start_index}] {project}")
             if limit is not None and limit < num_projects:
                 print('   ...')
         display()
         self.list_project_history = projects
-        self.set_quick_access(projects)
+
+        if update_quick_access:
+            self.set_quick_access(projects)
+
+        return projects
 
     def delete(self, project_name:str, safe:bool=True):
         project_name = self._get_project_from_quick_access(project_name)
