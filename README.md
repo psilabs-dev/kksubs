@@ -16,4 +16,4 @@ Open a Python virtual environment and install the Git repository. For example:
 $ pip install git+https://github.com/pain-text-format/kksubs.git
 ```
 
-You can find an example project and usage [here](https://github.com/pain-text-format/kksubs-sample-project).
+You can find an example project and usage [here](https://github.com/pain-text-format/kksubs-sample-project), and view [docs](docs/README.md) for more documentation.
