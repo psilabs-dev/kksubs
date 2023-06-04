@@ -209,7 +209,7 @@ class ProjectController:
         if self.studio_project_service.is_project(current_project):
             print(f'--- KKSUBS (working on \"{self.current_project}\") ---')
         else:
-            self._unassign()
+            self._unassign(delete_project=False)
             print('--- KKSUBS (no project assigned) ---')
 
     def compose(self, incremental_update:bool=None):
@@ -233,9 +233,10 @@ class ProjectController:
 
     # 'librarian'-related commands.
 
-    def _unassign(self):
+    def _unassign(self, delete_project:bool=True):
         self.current_project = None
-        self.subtitle_project_service.delete_project()
+        if delete_project:
+            self.subtitle_project_service.delete_project()
 
     def _pull_captures(self):
         # just sync captures (library and kksub project)
@@ -272,7 +273,7 @@ class ProjectController:
     def get_output_directory(self):
         return self.subtitle_project_service.get_output_directory()
 
-    def checkout(self, project_name:str, new_branch:bool=False):
+    def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True):
 
         if new_branch:
             # for creating new branch.
@@ -287,8 +288,11 @@ class ProjectController:
                 return
             
             # save changes before creating new branch.
-            self.sync()
-            self.create(project_name)
+            print(f'Saving project {self.current_project}.')
+            self.sync(compose=False)
+            print(f'Creating new project {project_name}.')
+            self.create(project_name, compose=True)
+            print(f'Successfully created {project_name}')
         
         else:
             project_name = self._get_project_from_history(project_name)
@@ -309,23 +313,30 @@ class ProjectController:
                 return
 
             if self.current_project is not None and self.studio_project_service.is_project(self.current_project):
-                self.sync()
+                print(f'Saving project {self.current_project}.')
+                self.save_current_project()
             
-            self._unassign()
+            print(f'Checking out {project_name}.')
+            self._unassign(delete_project=True)
             self._assign(project_name)
             self._pull_to_subtitle_project()
+
             self.subtitle_project_service.clear_subtitles(force=True)
             self.subtitle_project_service.create()
-            self.sync()
 
-    def create(self, project_name:str):            
+            print(f'Loading project {project_name}')
+            self.sync(compose=compose)
+            print(f'Checkout successful.')
+
+    def create(self, project_name:str, compose:bool=True):            
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
         capture_path = self.studio_project_service.to_project_capture_path(project_name)
         self.file_service.sync_unidirectional(capture_path, self.subtitle_project_service.images_dir)
         self.subtitle_project_service.create()
-        self.sync()
-        self.compose()
+        self.sync(compose=False)
+        if compose:
+            self.compose()
 
     def list_projects(self, pattern:str, limit:Optional[int]=None):
         logger.info(f"Listing projects with pattern {pattern}.")
@@ -382,6 +393,9 @@ class ProjectController:
         self._pull_captures()
         if compose:
             self.compose(incremental_update=True)
+
+    def save_current_project(self):
+        self.sync(compose=True)
 
     def open_studio(self):
         studio_exe_path = os.path.join(self.game_directory, 'CharaStudio.exe')
