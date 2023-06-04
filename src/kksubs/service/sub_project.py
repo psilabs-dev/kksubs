@@ -455,7 +455,7 @@ Original error message: {traceback.format_exc()}
 
         # extract subtitle styles (if any)
         if not os.path.exists(self.styles_path):
-            logger.warning("No styles configured: will use default styles or ones found in draft.")
+            logger.info("No styles configured: will use default styles or ones found in draft.")
             styles_contents = list()
         else:
             with open(self.styles_path, "r", encoding="utf-8") as yaml_reader:
