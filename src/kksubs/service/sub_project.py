@@ -508,7 +508,9 @@ Original error message: {traceback.format_exc()}
     def clear_subtitles(self, drafts:Dict[str, List[int]]=None, force=False):
         # remove outputs corresponding to a draft.
         # if drafts is None, remove all folders in the output directory.
-
+        if not os.path.exists(self.outputs_dir):
+            return
+        
         if drafts is None:
             folders = list(filter(lambda dir:os.path.isdir(os.path.join(self.outputs_dir, dir)), os.listdir(self.outputs_dir)))
             if not folders:
