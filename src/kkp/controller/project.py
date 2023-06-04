@@ -371,6 +371,7 @@ class ProjectController:
         if project_name == self.current_project:
             self._unassign()
             self.subtitle_project_service.delete_project()
+        print(f'Deleted project {project_name}')
 
     def _sync_studio(self):
         # just sync studio (game and library)
