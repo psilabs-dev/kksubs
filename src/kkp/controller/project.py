@@ -285,8 +285,10 @@ class ProjectController:
             confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
             if not confirm:
                 return
-            if self.current_project is not None:
-                self.create(project_name)
+            
+            # save changes before creating new branch.
+            self.sync()
+            self.create(project_name)
         
         else:
             project_name = self._get_project_from_history(project_name)
