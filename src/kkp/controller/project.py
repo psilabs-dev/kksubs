@@ -5,7 +5,6 @@ import yaml
 from common.exceptions import InvalidProjectException
 import subprocess
 from packaging import version
-import time
 
 from common.import_utils import get_kksubs_version
 from kksubs.service.file import FileService
@@ -249,15 +248,9 @@ class ProjectController:
         self.project_watcher.pass_sync(sync_func)
         self.project_watcher.watch()
 
-        # self.subtitle_project_service.validate()
-        # self.subtitle_watcher.load_watch_arguments(allow_incremental_updating=True, allow_multiprocessing=True)
-        # self.subtitle_watcher.watch()
-
     def clear(self):
         # clear outputs and metadata
         self.subtitle_project_service.clear_subtitles(force=True)
-
-    # 'librarian'-related commands.
 
     def _unassign(self, delete_project:bool=True):
         self.current_project = None
@@ -299,8 +292,8 @@ class ProjectController:
         self.set_recent_projects(recent_projects)
 
     def _remove_from_recent_projects(self, project_name):
-        if project_name in self.recent_projects:
-            self.recent_projects.remove(project_name)
+        if project_name in self.get_recent_projects():
+            self.get_recent_projects().remove(project_name)
 
     def _assign(self, project_name:str):
         self.current_project = project_name
