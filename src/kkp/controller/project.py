@@ -276,9 +276,16 @@ class ProjectController:
 
         if new_branch:
             # for creating new branch.
+            if self.current_project is None:
+                print('Cannot checkout from empty project. Please create a project first.')
+                return
+            
+            parent_dir = os.path.dirname(self.current_project)
+            project_name = os.path.join(parent_dir, project_name)
+            confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
+            if not confirm:
+                return
             if self.current_project is not None:
-                parent_dir = os.path.dirname(self.current_project)
-                project_name = os.path.join(parent_dir, project_name)
                 self.create(project_name)
         
         else:
@@ -386,6 +393,12 @@ class ProjectController:
         subprocess.Popen(game_exe_path)
         return
     
+    def open_library_directory(self):
+        if os.path.exists(self.library):
+            os.startfile(self.library)
+        else:
+            raise FileNotFoundError(self.library)
+
     def open_game_directory(self):
         if os.path.exists(self.game_directory):
             os.startfile(self.game_directory)

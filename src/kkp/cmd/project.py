@@ -50,6 +50,8 @@ def command_line():
 
     studio_parser = subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
 
+    library_parser = subparsers.add_parser('library', help='Open library folder.')
+
     game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
 
     game_folder_parser = subparsers.add_parser('game-folder', help='Open Koikatsu Party game folder.')
@@ -109,6 +111,9 @@ def command_line():
 
     if command == 'studio':
         controller.open_studio()
+
+    if command == 'library':
+        controller.open_library_directory()
 
     if command == 'game':
         controller.open_game()
