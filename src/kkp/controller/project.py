@@ -287,8 +287,6 @@ class ProjectController:
         if project_name in recent_projects:
             recent_projects.remove(project_name)
         recent_projects.insert(0, project_name)
-        while len(recent_projects) > 10:
-            recent_projects.pop()
         self.set_recent_projects(recent_projects)
 
     def _remove_from_recent_projects(self, project_name):
@@ -384,6 +382,9 @@ class ProjectController:
                 logger.error(f'Project {recent_project} is invalid.')
                 self.recent_projects.remove(recent_project)
         
+        while len(self.recent_projects) > self.recent_projects_limit:
+            self.recent_projects.pop()
+
         return self.recent_projects
 
     def set_recent_projects(self, recent_projects:List[str]):
