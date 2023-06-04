@@ -1,12 +1,14 @@
 # KKP Command Line Tool
 
-`kkp` (Koikatsu Projects) is a command line tool that integrates subtitle projects with the Koikatsu Party game in a more integrated environment.
+`kkp` (Koikatsu Projects) is a command line tool that integrates subtitle projects with the Koikatsu Party game in a more integrated environment. 
+
+A "studio project" refers to the subtitle project along with the `UserData` folder it is associated with. `kkp` is thus a manager of studio projects.
 
 Main features:
 
 * Create a subtitle project from the current game directory
     * Add subtitles on images in the `UserData/cap` folder
-* Save/load multiple subtitle projects to/from a library
+* Save/load multiple studio projects to/from a library
 
 ## Configure
 ```bash
