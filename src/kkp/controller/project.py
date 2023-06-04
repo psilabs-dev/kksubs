@@ -30,7 +30,9 @@ CURRENT_PROJECT_KEY = 'current-project'
 SYNC_TIME_KEY = 'last-synced-time'
 SUBTITLE_SYNC_STATE_KEY = 'subtitle-sync-state'
 STUDIO_SYNC_STATE_KEY = 'studio-sync-state'
+QUICK_ACCESS_KEY = 'quick-access'
 LIST_PROJECT_HISTORY_KEY = 'list-project-history'
+RECENT_PROJECTS_KEY = 'recent-projects'
 VERSION_KEY = 'version'
 
 logger = logging.getLogger(__name__)
@@ -70,7 +72,11 @@ class ProjectController:
         self.project_watcher = None
         self.project_view = project_view
 
+        self.quick_access:List[str] = None
         self.list_project_history:List[str] = None
+        self.list_project_limit:int = 10
+        self.recent_projects:List[str] = None
+        self.recent_projects_limit:int = 10
 
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
@@ -111,7 +117,9 @@ class ProjectController:
             CURRENT_PROJECT_KEY: self.current_project,
             SUBTITLE_SYNC_STATE_KEY: self.subtitle_sync_state,
             STUDIO_SYNC_STATE_KEY: self.studio_sync_state,
+            QUICK_ACCESS_KEY: self.quick_access,
             LIST_PROJECT_HISTORY_KEY: self.list_project_history,
+            RECENT_PROJECTS_KEY: self.recent_projects,
             VERSION_KEY: get_kksubs_version(),
         }
         data_path = self._get_data_file_path(data_file_path=data_path)
@@ -141,7 +149,9 @@ class ProjectController:
         data_info[SUBTITLE_SYNC_STATE_KEY] = data_info.get(SUBTITLE_SYNC_STATE_KEY)
         data_info[STUDIO_SYNC_STATE_KEY] = data_info.get(STUDIO_SYNC_STATE_KEY)
         data_info[SYNC_TIME_KEY] = data_info.get(SYNC_TIME_KEY)
+        data_info[QUICK_ACCESS_KEY] = data_info.get(QUICK_ACCESS_KEY)
         data_info[LIST_PROJECT_HISTORY_KEY] = data_info.get(LIST_PROJECT_HISTORY_KEY)
+        data_info[RECENT_PROJECTS_KEY] = data_info.get(RECENT_PROJECTS_KEY)
         data_info[VERSION_KEY] = data_info.get(VERSION_KEY)
 
         # version comparison
@@ -160,7 +170,15 @@ class ProjectController:
                     for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
                         config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
 
-                    for data_key in [CURRENT_PROJECT_KEY, SUBTITLE_SYNC_STATE_KEY, STUDIO_SYNC_STATE_KEY, SYNC_TIME_KEY, LIST_PROJECT_HISTORY_KEY]:
+                    for data_key in [
+                        CURRENT_PROJECT_KEY, 
+                        SUBTITLE_SYNC_STATE_KEY, 
+                        STUDIO_SYNC_STATE_KEY, 
+                        SYNC_TIME_KEY, 
+                        QUICK_ACCESS_KEY,
+                        LIST_PROJECT_HISTORY_KEY,
+                        RECENT_PROJECTS_KEY,
+                    ]:
                         data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
                     logger.info('Deleting old data file.')
                     os.remove(kks_data_file)
@@ -184,7 +202,9 @@ class ProjectController:
         self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
         self.studio_sync_state = data_info.get(STUDIO_SYNC_STATE_KEY)
         self.last_sync_time = data_info.get(SYNC_TIME_KEY)
+        self.quick_access = data_info.get(QUICK_ACCESS_KEY)
         self.list_project_history = data_info.get(LIST_PROJECT_HISTORY_KEY)
+        self.recent_projects = data_info.get(RECENT_PROJECTS_KEY)
 
         self.subtitle_project_service = SubtitleProjectService(project_directory=self.workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
@@ -203,7 +223,9 @@ class ProjectController:
         print(f'Game:                {self.game_directory}')
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
-        self.list_projects(pattern='*', limit=10)
+
+        # self.list_projects(pattern='*', limit=self.list_project_limit)
+        self.list_recent_projects(limit=self.recent_projects_limit)
 
         current_project = self.current_project
         if self.studio_project_service.is_project(current_project):
@@ -260,11 +282,27 @@ class ProjectController:
             raise InvalidProjectException(project_name)
         self._pull_captures()
 
+    def _update_recent_projects(self, project_name):
+        # updates recent project list with project name.
+        if self.recent_projects is None:
+            self.recent_projects = list()
+        if project_name in self.recent_projects:
+            self.recent_projects.remove(project_name)
+        self.recent_projects.insert(0, project_name)
+        while len(self.recent_projects) > 10:
+            self.recent_projects.pop()
+
+    def _remove_from_recent_projects(self, project_name):
+        if project_name in self.recent_projects:
+            self.recent_projects.remove(project_name)
+
     def _assign(self, project_name:str):
         self.current_project = project_name
+        self._update_recent_projects(project_name)
 
-    def _get_project_from_history(self, project_name):
-        previous_projects = self.list_project_history
+    def _get_project_from_quick_access(self, project_name:str):
+        # check if project refers to a quick access integer.
+        previous_projects = self.quick_access
         if previous_projects is not None:
             if project_name.isdigit() and int(project_name) < len(previous_projects):
                 project_name = previous_projects[int(project_name)]
@@ -295,7 +333,7 @@ class ProjectController:
             print(f'Successfully created {project_name}')
         
         else:
-            project_name = self._get_project_from_history(project_name)
+            project_name = self._get_project_from_quick_access(project_name)
             project_list = self.studio_project_service.list_projects(project_name)
             # if existing branch, search for eligible branches.
             if len(project_list) == 0:
@@ -338,6 +376,46 @@ class ProjectController:
         if compose:
             self.compose()
 
+    def get_recent_projects(self) -> List[str]:
+        if self.recent_projects is None:
+            return list()
+        
+        for recent_project in self.recent_projects:
+            if not self.studio_project_service.is_project(recent_project):
+                logger.error(f'Project {recent_project} is invalid.')
+                self.recent_projects.remove(recent_project)
+        
+        return self.recent_projects
+
+    def set_quick_access(self, project_list:List[str]):
+        self.quick_access = project_list
+
+    def list_recent_projects(self, limit:Optional[int]=None):
+        logger.info(f'Listing recent projects.')
+
+        recent_projects = self.get_recent_projects()
+        if not recent_projects:
+            print(f'No recent projects found.')
+            return
+        num_projects = len(recent_projects)
+        
+        if limit is None:
+            pass
+        elif isinstance(limit, int):
+            recent_projects = recent_projects[:limit]
+        else:
+            raise TypeError(type(limit))
+
+        @spacing
+        def display():
+            print('List of recent projects:\n')
+            for i, project in enumerate(recent_projects):
+                print(f"[{i}] {project}")
+            if limit is not None and limit < num_projects:
+                print('   ...')
+        display()
+        self.set_quick_access(recent_projects)
+
     def list_projects(self, pattern:str, limit:Optional[int]=None):
         logger.info(f"Listing projects with pattern {pattern}.")
         projects = self.studio_project_service.list_projects(pattern=pattern)
@@ -364,9 +442,10 @@ class ProjectController:
                 print('   ...')
         display()
         self.list_project_history = projects
+        self.set_quick_access(projects)
 
     def delete(self, project_name:str, safe:bool=True):
-        project_name = self._get_project_from_history(project_name)
+        project_name = self._get_project_from_quick_access(project_name)
         self.studio_project_service.delete_project(project_name, safe=safe)
         if project_name == self.current_project:
             self._unassign()
