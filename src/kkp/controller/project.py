@@ -405,7 +405,10 @@ class ProjectController:
         logger.info(f'Saving project {self.current_project}')
         self.sync(compose=False)
         logger.info(f'Creating project {project_name}')
-        self._create(project_name, compose)
+        self._create(project_name, compose=False)
+        if compose:
+            logger.info('Applying subtitles...')
+            self.compose()
 
     def get_recent_projects(self) -> List[str]:
         if self.recent_projects is None:
