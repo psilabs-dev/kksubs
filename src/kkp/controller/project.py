@@ -341,7 +341,7 @@ class ProjectController:
             print(f'Saving project {self.current_project}.')
             self.sync(compose=False)
             print(f'Creating new project {project_name}.')
-            self.create(project_name, compose=True)
+            self._create(project_name, compose=True)
             print(f'Successfully created {project_name}')
         
         else:
@@ -378,7 +378,8 @@ class ProjectController:
             self.sync(compose=compose)
             print(f'Checkout successful.')
 
-    def create(self, project_name:str, compose:bool=True):            
+    def _create(self, project_name:str, compose:bool=True):
+        # create project.
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
         capture_path = self.studio_project_service.to_project_capture_path(project_name)
@@ -387,6 +388,16 @@ class ProjectController:
         self.sync(compose=False)
         if compose:
             self.compose()
+
+    def create(self, project_name, compose:bool=True):
+        confirm = input(f'Create project {project_name} from {self.current_project}? (Y) ') == 'Y'
+        if not confirm:
+            return
+        
+        logger.info(f'Saving project {self.current_project}')
+        self.sync(compose=False)
+        logger.info(f'Creating project {project_name}')
+        self._create(project_name, compose)
 
     def get_recent_projects(self) -> List[str]:
         if self.recent_projects is None:
@@ -456,7 +467,7 @@ class ProjectController:
         
         projects.sort()
         if not projects:
-            print("No projects found in library.")
+            logger.info("No projects found in library.")
             return
         
         @spacing
@@ -499,10 +510,15 @@ class ProjectController:
             logger.error(f'No assigned project to sync with.')
             return
         self._sync_studio()
+        logger.info(f'Synced studio.')
         self._sync_workspace()
+        logger.info(f'Synced subtitle project.')
         self._pull_captures()
+        logger.info(f'Retrieved captures.')
         if compose:
+            logger.info(f'Applying subtitles...')
             self.compose(incremental_update=True)
+            logger.info(f'Applied subtitles.')
 
     def save_current_project(self):
         self.sync(compose=True)

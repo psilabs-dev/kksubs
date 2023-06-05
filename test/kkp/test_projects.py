@@ -52,9 +52,9 @@ class TestProjectController(unittest.TestCase):
             self.set_up_test(temp_dir)
 
             # create test project
-            self.controller.create('test')
+            self.controller._create('test')
             self.assertTrue(self.project_exists_in_library('test'))
             # cannot create a project within a project.
-            self.assertRaises(FileExistsError, self.controller.create, 'test/2')
-            self.controller.create('test2')
+            self.assertRaises(FileExistsError, self.controller._create, 'test/2')
+            self.controller._create('test2')
             self.assertRaises(InvalidProjectException, self.controller.checkout, 'test3')
