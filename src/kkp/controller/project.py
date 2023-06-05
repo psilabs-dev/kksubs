@@ -38,6 +38,11 @@ VERSION_KEY = 'version'
 
 logger = logging.getLogger(__name__)
 
+def format_project_name(project_name:str):
+    if project_name is None:
+        return project_name
+    return project_name.replace('/', os.path.sep)
+
 class ProjectController:
 
     def __init__(
@@ -302,8 +307,9 @@ class ProjectController:
             raise InvalidProjectException(project_name)
         self._pull_captures()
 
-    def _update_recent_projects(self, project_name):
+    def _update_recent_projects(self, project_name:str):
         # updates recent project list with project name.
+        project_name = format_project_name(project_name)
         recent_projects = self.get_recent_projects()
         if recent_projects is None:
             recent_projects = list()
@@ -332,7 +338,7 @@ class ProjectController:
         return self.subtitle_project_service.get_output_directory()
 
     def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True):
-
+        project_name = format_project_name(project_name)
         if new_branch:
             # for creating new branch.
             if self.current_project is None:
@@ -366,7 +372,7 @@ class ProjectController:
             confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
             if not confirm:
                 return
-            if project_name == self.current_project:
+            if project_name == format_project_name(self.current_project):
                 print(f'Current workspace is already assigned to {project_name}.')
                 return
 
@@ -397,7 +403,8 @@ class ProjectController:
         if compose:
             self.compose()
 
-    def create(self, project_name, compose:bool=True):
+    def create(self, project_name:str, compose:bool=True):
+        project_name = format_project_name(project_name)
         confirm = input(f'Create project {project_name} from {self.current_project}? (Y) ') == 'Y'
         if not confirm:
             return
