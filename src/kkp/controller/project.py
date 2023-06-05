@@ -209,6 +209,14 @@ class ProjectController:
         self.workspace = config_info.get(WORKSPACE_KEY)
         self.settings = KKPSettings.deserialize(config_info.get(SETTINGS_KEY))
 
+        # load settings
+        if self.settings.log is not None:
+            level = self.settings.log.get_log_level()
+            if level is None:
+                pass
+            else:
+                logger.setLevel(level=level)
+
         self.current_project = data_info.get(CURRENT_PROJECT_KEY)
         self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
         self.studio_sync_state = data_info.get(STUDIO_SYNC_STATE_KEY)
