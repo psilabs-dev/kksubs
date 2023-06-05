@@ -279,3 +279,22 @@ class StudioProjectService:
         project_path = self.to_project_path(project_name)
         capture_path = os.path.join(project_path, 'UserData/cap')
         return capture_path
+    
+    def export_project_to_gallery(self, project_name, destination):
+        cap_source = os.path.join(self.to_project_capture_path(project_name))
+        cap_target = os.path.join(destination, project_name, 'cap')
+        output_source = os.path.join(self.to_project_path(project_name), 'kksubs-project\\output')
+        output_target = os.path.join(destination, project_name, 'output')
+
+        # print(f'{cap_source}\n{cap_target}\n{output_source}\n{output_target}\n')
+        self.file_service.sync_unidirectional(cap_source, cap_target)
+        self.file_service.sync_unidirectional(output_source, output_target)
+        return
+    
+    def export_gallery(self, destination:str, pattern:str=None):
+        projects = self.list_projects(pattern=pattern)
+        for project_name in projects:
+            self.export_project_to_gallery(project_name, destination)
+            logger.info(f'Exported project \"{project_name}\".')
+        
+        return projects

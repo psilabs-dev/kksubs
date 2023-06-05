@@ -127,3 +127,15 @@ Persistent data used to accelerate subtitling is stored in the `[workspace]/.kks
 kkp clear
 ```
 Delete outputs and the `.kksubs` directory within the workspace.
+
+## Export
+```
+kkp export [--clean] [--show] [--force] [export-destination]
+```
+Export outputs (`UserData/cap` and `kksubs-project/output`) of projects to a destination folder.
+
+`clean` flag deletes the destination folder and creates a new one.
+
+`show` flag opens the destination folder in file explorer after exporting.
+
+`force` flag disables confirmation prompts.

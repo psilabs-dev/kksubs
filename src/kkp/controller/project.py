@@ -77,6 +77,11 @@ class ProjectController:
         self.recent_projects:List[str] = None
         self.recent_projects_limit:int = 5
 
+        self.export_map = {
+            'UserData/cap': 'cap',
+            'kksubs-project/output': 'output',
+        }
+
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
 
@@ -534,6 +539,30 @@ class ProjectController:
         for folder in folders:
             folder = os.path.join(output_dir, folder)
             os.startfile(folder)
+
+    def export_gallery(self, destination, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False):
+        # export library outputs to destination.
+        if not os.path.exists(destination):
+            raise FileNotFoundError(destination)
+        
+        destination = os.path.realpath(destination)
+        if not os.path.isdir(destination):
+            raise TypeError(f'Destination {destination} is not a directory.')
+
+        if not force:
+            confirm = input(f'Export output to {destination}? (Y) ') == 'Y'
+            if not confirm:
+                return
+        
+        if clean:
+            shutil.rmtree(destination)
+            os.makedirs(destination, exist_ok=True)
+
+        projects = self.studio_project_service.export_gallery(destination, pattern=pattern)
+        print(f'Finished exporting {len(projects)} projects.')
+
+        if show_destination:
+            os.startfile(destination)
 
     def close(self):
         # persist changes to metadata
