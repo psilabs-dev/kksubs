@@ -61,7 +61,7 @@ def command_line():
     show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
     
     export_parser = subparsers.add_parser('export', help='Export library contents to a destination.')
-    export_parser.add_argument('destination', type=str, help='Specify export destination.')
+    export_parser.add_argument('-d', '--destination', type=str, help='Specify export destination.')
     export_parser.add_argument('--clean', action='store_true', help='Remove contents of destination before exporting.')
     export_parser.add_argument('--show', action='store_true', help='Open destination folder after exporting.')
     export_parser.add_argument('-f', '--force', action='store_true', help='Disable prompts for confirmation.')
@@ -133,8 +133,12 @@ def command_line():
         controller.open_output_folders(drafts=drafts)
 
     if command == 'export':
-        destination = args.destination
-        controller.export_gallery(destination, clean=args.clean, show_destination=args.show, force=args.force)
+        controller.export_gallery(
+            destination=args.destination, 
+            clean=args.clean, 
+            show_destination=args.show, 
+            force=args.force
+        )
 
     # END PROJECT COMMANDS
 

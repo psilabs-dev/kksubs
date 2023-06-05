@@ -7,6 +7,7 @@ import subprocess
 from packaging import version
 
 from common.import_utils import get_kksubs_version
+from kkp.data.config import KKPSettings
 from kksubs.service.file import FileService
 from kkp.service.studio_project import StudioProjectService
 
@@ -22,6 +23,7 @@ CONFIG_FILE_NAME = 'config.yaml'
 GAME_DIRECTORY_KEY = 'game-directory'
 LIBRARY_KEY = 'library-directory'
 WORKSPACE_KEY = 'workspace-directory'
+SETTINGS_KEY = 'settings'
 
 # data information
 DATA_FILE_NAME = 'data.yaml'
@@ -58,6 +60,8 @@ class ProjectController:
         self.game_directory = game_directory
         self.library = library
         self.workspace = workspace
+        self.settings:KKPSettings = None
+
         self.current_project = current_project
 
         self.data_file_path = data_file_path
@@ -102,6 +106,7 @@ class ProjectController:
             GAME_DIRECTORY_KEY: self.game_directory,
             LIBRARY_KEY: self.library,
             WORKSPACE_KEY: self.workspace,
+            SETTINGS_KEY: self.settings.serialize(),
         }
         config_path = self._get_config_file_path(config_path=config_path)
         with open(config_path, 'w') as writer:
@@ -148,6 +153,7 @@ class ProjectController:
         config_info[GAME_DIRECTORY_KEY] = coalesce(game_directory, config_info.get(GAME_DIRECTORY_KEY))
         config_info[LIBRARY_KEY] = coalesce(library, config_info.get(LIBRARY_KEY))
         config_info[WORKSPACE_KEY] = coalesce(workspace, config_info.get(WORKSPACE_KEY))
+        config_info[SETTINGS_KEY] = config_info.get(SETTINGS_KEY)
 
         data_info[CURRENT_PROJECT_KEY] = data_info.get(CURRENT_PROJECT_KEY)
         data_info[SUBTITLE_SYNC_STATE_KEY] = data_info.get(SUBTITLE_SYNC_STATE_KEY)
@@ -201,6 +207,7 @@ class ProjectController:
         self.game_directory = config_info.get(GAME_DIRECTORY_KEY)
         self.library = config_info.get(LIBRARY_KEY)
         self.workspace = config_info.get(WORKSPACE_KEY)
+        self.settings = KKPSettings.deserialize(config_info.get(SETTINGS_KEY))
 
         self.current_project = data_info.get(CURRENT_PROJECT_KEY)
         self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
@@ -540,8 +547,19 @@ class ProjectController:
             folder = os.path.join(output_dir, folder)
             os.startfile(folder)
 
-    def export_gallery(self, destination, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False):
+    def export_gallery(
+            self, destination:str=None, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False
+    ):
         # export library outputs to destination.
+        try:
+            settings_destination = self.settings.export.destination
+            destination = coalesce(destination, settings_destination)
+        except AttributeError:
+            pass
+        
+        if destination is None:
+            raise TypeError('Destination is None.')
+
         if not os.path.exists(destination):
             raise FileNotFoundError(destination)
         
