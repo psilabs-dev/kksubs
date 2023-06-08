@@ -128,6 +128,23 @@ kkp clear
 ```
 Delete outputs and the `.kksubs` directory within the workspace.
 
+## Merge
+```
+kkp merge [project-name]
+```
+Merge `UserData` contents of another project (or projects if you use wildcards) into the current one. Existing files will not be deleted, but files with the same names will be overridden.
+
+Affected folders include:
+
+* bg
+* cap
+* cardframe
+* chara
+* coordinate
+* MaterialEditor
+* Overlays
+* studio
+
 ## Export
 ```
 kkp export [--clean] [--show] [--force] [export-destination]

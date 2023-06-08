@@ -90,6 +90,22 @@ class ProjectController:
             'UserData/cap': 'cap',
             'kksubs-project/output': 'output',
         }
+        self.merge_targets = {
+            'UserData\\bg',
+            'UserData\\cap',
+            'UserData\\cardframe',
+            'UserData\\chara',
+            # 'UserData\\config',
+            'UserData\\coordinate',
+            # 'UserData\\custom',
+            # 'UserData\\LauncherEN',
+            'UserData\\MaterialEditor',
+            'UserData\\Overlays',
+            # 'UserData\\pattern',
+            # 'UserData\\pattern_thumb',
+            # 'UserData\\save',
+            'UserData\\studio',
+        }
 
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
@@ -615,6 +631,45 @@ class ProjectController:
 
         if show_destination:
             os.startfile(destination)
+
+    def _merge_project(self, project_name:str):
+        # merge project into current project.
+        for merge_target in self.merge_targets:
+            source = os.path.join(self.studio_project_service.to_project_path(project_name), merge_target)
+            destination = os.path.join(self.game_directory, merge_target)
+            self.file_service.transfer(source, destination)
+        return
+
+    def merge_project(self, project_name:str):
+        # transfer items from project-name to current project.
+        # note: if the file exists with same name, it will be overridden.
+        project_name = format_project_name(project_name)
+        project_name = self._get_project_from_quick_access(project_name)
+        project_names = self.studio_project_service.list_projects(pattern=project_name)
+        
+        if not project_names:
+            print(f'No projects found.')
+            return
+
+        if len(project_names) == 1:
+            confirm = input(f'Merge from {project_name} into current game? (Y) ') == 'Y'
+            pass
+        if len(project_names) > 1:
+            project_names = self.project_view.select_projects_from_list(self.current_project, project_names)
+            if not project_names:
+                return
+            for p in project_names:
+                print(f'- {p}')
+            print('You are about to merge the above projects into your current project. Files of the same name will be overridden.')
+            confirm = input(f'Proceed? (Y) ') == 'Y'
+
+        if not confirm:
+            return
+        
+        for p in project_names:
+            self._merge_project(p)
+            logger.info(f'Finished merging project {p}.')
+        return
 
     def close(self):
         # persist changes to metadata

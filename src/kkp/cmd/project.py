@@ -66,6 +66,9 @@ def command_line():
     export_parser.add_argument('--show', action='store_true', help='Open destination folder after exporting.')
     export_parser.add_argument('-f', '--force', action='store_true', help='Disable prompts for confirmation.')
 
+    merge_parser = subparsers.add_parser('merge', help='Merge a project into the current game directory.')
+    merge_parser.add_argument('project_name', type=str, help='Name of project to merge.')
+
     args = parser.parse_args()
     command = args.command
 
@@ -139,6 +142,10 @@ def command_line():
             show_destination=args.show, 
             force=args.force
         )
+
+    if command == 'merge':
+        project_name = args.project_name
+        controller.merge_project(project_name)
 
     # END PROJECT COMMANDS
 
