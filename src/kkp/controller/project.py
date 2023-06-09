@@ -92,7 +92,7 @@ class ProjectController:
         }
         self.merge_targets = {
             'UserData\\bg',
-            'UserData\\cap',
+            # 'UserData\\cap',
             'UserData\\cardframe',
             'UserData\\chara',
             # 'UserData\\config',
