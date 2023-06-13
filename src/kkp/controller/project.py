@@ -652,6 +652,7 @@ class ProjectController:
             return
 
         if len(project_names) == 1:
+            project_name = project_names[0]
             confirm = input(f'Merge from {project_name} into current game? (Y) ') == 'Y'
             pass
         if len(project_names) > 1:
