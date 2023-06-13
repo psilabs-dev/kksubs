@@ -225,6 +225,10 @@ def sync_unidirectional(source, destination, filename_filter:List[str]=None, ena
             dest_target = os.path.join(destination, target)
             sync_unidirectional(source_target, dest_target, enable_log=enable_log)
 
+    if os.path.isfile(source):
+        shutil.copy2(source, destination)
+        return
+
     # run robocopy without outputting stuff.
     command = ['robocopy', source, destination, '/MIR']
     if enable_log:

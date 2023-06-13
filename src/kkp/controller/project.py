@@ -502,7 +502,7 @@ class ProjectController:
         projects.sort()
         if not projects:
             logger.info("No projects found in library.")
-            return
+            return list()
         
         @spacing
         def display():
