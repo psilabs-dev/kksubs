@@ -20,6 +20,7 @@ import tempfile
 import os
 import unittest
 from common.exceptions import InvalidProjectException
+from pathlib import Path
 
 from kkp.controller.project import ProjectController
 
@@ -29,12 +30,14 @@ def create_test_site(test_dir):
     library = os.path.join(test_dir, 'library')
     user_data = os.path.join(game, 'UserData')
     cap = os.path.join(user_data, 'cap')
+    chara = os.path.join(user_data, 'chara')
 
     os.makedirs(workspace, exist_ok=True)
     os.makedirs(game, exist_ok=True)
     os.makedirs(library, exist_ok=True)
     os.makedirs(user_data, exist_ok=True)
     os.makedirs(cap, exist_ok=True)
+    os.makedirs(chara, exist_ok=True)
     return workspace, game, library
 
 class TestProjectController(unittest.TestCase):
@@ -58,3 +61,24 @@ class TestProjectController(unittest.TestCase):
             self.assertRaises(FileExistsError, self.controller._create, 'test/2')
             self.controller._create('test2')
             self.assertRaises(InvalidProjectException, self.controller.checkout, 'test3')
+    
+    def test_merge_project(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.set_up_test(temp_dir)
+
+            # create test project
+            self.controller._create('test')
+            self.controller._create('test2')
+
+            character_file = os.path.join('UserData', 'chara', 'character.png')
+            cap_file = os.path.join('UserData', 'cap', 'image.png')
+            with open(os.path.join(self.library, 'test', character_file), 'w') as writer:
+                writer.write("")
+            with open(os.path.join(self.library, 'test', cap_file), 'w') as writer:
+                writer.write("")
+
+            self.assertFalse(os.path.exists(os.path.join(self.game, character_file)))
+            self.assertFalse(os.path.exists(os.path.join(self.game, cap_file)))
+            self.controller._merge_project('test')
+            self.assertTrue(os.path.exists(os.path.join(self.game, character_file)))
+            self.assertFalse(os.path.exists(os.path.join(self.game, cap_file)))
