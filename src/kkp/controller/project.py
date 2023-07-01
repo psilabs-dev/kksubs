@@ -575,11 +575,23 @@ class ProjectController:
         else:
             raise FileNotFoundError(self.library)
 
-    def open_game_directory(self):
-        if os.path.exists(self.game_directory):
-            os.startfile(self.game_directory)
-        else:
-            raise FileNotFoundError(self.game_directory)
+    def open_game_directory(self, shortcut:str=None):
+        dir = self.game_directory
+
+        if shortcut is None:
+            if not os.path.exists(dir):
+                raise FileNotFoundError(dir)
+            os.startfile(dir)
+            return
+            
+        subdir = self.settings.open_game_directory.shortcuts.get(shortcut)
+        if subdir is None:
+            raise KeyError(f"Shortcut \"{shortcut}\" not found")
+        dir = os.path.join(dir, subdir)
+        if not os.path.exists(dir):
+            raise FileNotFoundError(dir)
+        os.startfile(dir)
+        return
     
     def open_output_folders(self, drafts:str=None):
         output_dir = self.get_output_directory()

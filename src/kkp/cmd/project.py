@@ -56,6 +56,7 @@ def command_line():
     game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
 
     game_folder_parser = subparsers.add_parser('game-folder', help='Open Koikatsu Party game folder.')
+    game_folder_parser.add_argument('-s', '--shortcut', type=str, help='Shortcut to open a subfolder.')
 
     show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
     show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
@@ -129,7 +130,8 @@ def command_line():
         controller.open_game()
 
     if command == 'game-folder':
-        controller.open_game_directory()
+        shortcut = args.shortcut
+        controller.open_game_directory(shortcut=shortcut)
 
     if command == 'show':
         drafts = args.drafts

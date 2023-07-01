@@ -89,9 +89,9 @@ kkp studio
 ```
 Run Chara Studio.
 ```
-kkp game-folder
+kkp game-folder --shortcut [shortcut]
 ```
-Open Koikatsu Party folder with explorer.
+Open Koikatsu Party folder with explorer. Optional shortcuts (e.g. `cap` or `chara`) open the `cap` or `chara` folders respectively, and can be modified in `config.yaml` settings.
 ```
 kkp show
 ```
