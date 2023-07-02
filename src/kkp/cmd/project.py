@@ -56,15 +56,19 @@ def command_line():
     game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
 
     game_folder_parser = subparsers.add_parser('game-folder', help='Open Koikatsu Party game folder.')
+    game_folder_parser.add_argument('-s', '--shortcut', type=str, help='Shortcut to open a subfolder.')
 
     show_parser = subparsers.add_parser('show', help='Open folders in the output directory with file explorer.')
     show_parser.add_argument('-d', '--drafts', type=str, nargs='+', default=[], help='Names of folders to open.')
     
     export_parser = subparsers.add_parser('export', help='Export library contents to a destination.')
-    export_parser.add_argument('destination', type=str, help='Specify export destination.')
+    export_parser.add_argument('-d', '--destination', type=str, help='Specify export destination.')
     export_parser.add_argument('--clean', action='store_true', help='Remove contents of destination before exporting.')
     export_parser.add_argument('--show', action='store_true', help='Open destination folder after exporting.')
     export_parser.add_argument('-f', '--force', action='store_true', help='Disable prompts for confirmation.')
+
+    merge_parser = subparsers.add_parser('merge', help='Merge a project into the current game directory.')
+    merge_parser.add_argument('project_name', type=str, help='Name of project to merge.')
 
     args = parser.parse_args()
     command = args.command
@@ -126,15 +130,24 @@ def command_line():
         controller.open_game()
 
     if command == 'game-folder':
-        controller.open_game_directory()
+        shortcut = args.shortcut
+        controller.open_game_directory(shortcut=shortcut)
 
     if command == 'show':
         drafts = args.drafts
         controller.open_output_folders(drafts=drafts)
 
     if command == 'export':
-        destination = args.destination
-        controller.export_gallery(destination, clean=args.clean, show_destination=args.show, force=args.force)
+        controller.export_gallery(
+            destination=args.destination, 
+            clean=args.clean, 
+            show_destination=args.show, 
+            force=args.force
+        )
+
+    if command == 'merge':
+        project_name = args.project_name
+        controller.merge_project(project_name)
 
     # END PROJECT COMMANDS
 

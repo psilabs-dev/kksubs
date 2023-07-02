@@ -209,7 +209,10 @@ class StudioProjectService:
             workspace_file_path = os.path.join(self.game_directory, file)
             library_file_path = os.path.join(self.library, project_name, file)
             output_bucket = self.file_service.sync_bidirectional(workspace_file_path, library_file_path, previous_state=relevant_state, last_sync_time=last_sync_time)
-            new_state[file] = output_bucket.state()
+            if output_bucket is None:
+                new_state[file] = None
+            else:
+                new_state[file] = output_bucket.state()
 
         return new_state
     

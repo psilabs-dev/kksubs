@@ -89,9 +89,9 @@ kkp studio
 ```
 Run Chara Studio.
 ```
-kkp game-folder
+kkp game-folder --shortcut [shortcut]
 ```
-Open Koikatsu Party folder with explorer.
+Open Koikatsu Party folder with explorer. Optional shortcuts (e.g. `cap` or `chara`) open the `cap` or `chara` folders respectively, and can be modified in `config.yaml` settings.
 ```
 kkp show
 ```
@@ -127,6 +127,23 @@ Persistent data used to accelerate subtitling is stored in the `[workspace]/.kks
 kkp clear
 ```
 Delete outputs and the `.kksubs` directory within the workspace.
+
+## Merge
+```
+kkp merge [project-name]
+```
+Merge `UserData` contents of another project (or projects if you use wildcards) into the current one. Existing files will not be deleted, but files with the same names will be overridden.
+
+Affected folders include:
+
+* bg
+* cap
+* cardframe
+* chara
+* coordinate
+* MaterialEditor
+* Overlays
+* studio
 
 ## Export
 ```

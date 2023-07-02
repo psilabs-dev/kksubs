@@ -7,6 +7,7 @@ import subprocess
 from packaging import version
 
 from common.import_utils import get_kksubs_version
+from kkp.data.config import KKPSettings
 from kksubs.service.file import FileService
 from kkp.service.studio_project import StudioProjectService
 
@@ -22,6 +23,7 @@ CONFIG_FILE_NAME = 'config.yaml'
 GAME_DIRECTORY_KEY = 'game-directory'
 LIBRARY_KEY = 'library-directory'
 WORKSPACE_KEY = 'workspace-directory'
+SETTINGS_KEY = 'settings'
 
 # data information
 DATA_FILE_NAME = 'data.yaml'
@@ -35,6 +37,11 @@ RECENT_PROJECTS_KEY = 'recent-projects'
 VERSION_KEY = 'version'
 
 logger = logging.getLogger(__name__)
+
+def format_project_name(project_name:str):
+    if project_name is None:
+        return project_name
+    return project_name.replace('/', os.path.sep)
 
 class ProjectController:
 
@@ -58,6 +65,8 @@ class ProjectController:
         self.game_directory = game_directory
         self.library = library
         self.workspace = workspace
+        self.settings:KKPSettings = None
+
         self.current_project = current_project
 
         self.data_file_path = data_file_path
@@ -81,6 +90,22 @@ class ProjectController:
             'UserData/cap': 'cap',
             'kksubs-project/output': 'output',
         }
+        self.merge_targets = {
+            'UserData\\bg',
+            # 'UserData\\cap',
+            'UserData\\cardframe',
+            'UserData\\chara',
+            # 'UserData\\config',
+            'UserData\\coordinate',
+            # 'UserData\\custom',
+            # 'UserData\\LauncherEN',
+            'UserData\\MaterialEditor',
+            'UserData\\Overlays',
+            # 'UserData\\pattern',
+            # 'UserData\\pattern_thumb',
+            # 'UserData\\save',
+            'UserData\\studio',
+        }
 
     def _get_config_file_path(self, config_path:str=None):
         return coalesce(config_path, self.config_file_path)
@@ -102,6 +127,7 @@ class ProjectController:
             GAME_DIRECTORY_KEY: self.game_directory,
             LIBRARY_KEY: self.library,
             WORKSPACE_KEY: self.workspace,
+            SETTINGS_KEY: self.settings.serialize(),
         }
         config_path = self._get_config_file_path(config_path=config_path)
         with open(config_path, 'w') as writer:
@@ -148,6 +174,7 @@ class ProjectController:
         config_info[GAME_DIRECTORY_KEY] = coalesce(game_directory, config_info.get(GAME_DIRECTORY_KEY))
         config_info[LIBRARY_KEY] = coalesce(library, config_info.get(LIBRARY_KEY))
         config_info[WORKSPACE_KEY] = coalesce(workspace, config_info.get(WORKSPACE_KEY))
+        config_info[SETTINGS_KEY] = config_info.get(SETTINGS_KEY)
 
         data_info[CURRENT_PROJECT_KEY] = data_info.get(CURRENT_PROJECT_KEY)
         data_info[SUBTITLE_SYNC_STATE_KEY] = data_info.get(SUBTITLE_SYNC_STATE_KEY)
@@ -201,6 +228,15 @@ class ProjectController:
         self.game_directory = config_info.get(GAME_DIRECTORY_KEY)
         self.library = config_info.get(LIBRARY_KEY)
         self.workspace = config_info.get(WORKSPACE_KEY)
+        self.settings = KKPSettings.deserialize(config_info.get(SETTINGS_KEY))
+
+        # load settings
+        if self.settings.log is not None:
+            level = self.settings.log.get_log_level()
+            if level is None:
+                pass
+            else:
+                logger.setLevel(level=level)
 
         self.current_project = data_info.get(CURRENT_PROJECT_KEY)
         self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
@@ -287,8 +323,9 @@ class ProjectController:
             raise InvalidProjectException(project_name)
         self._pull_captures()
 
-    def _update_recent_projects(self, project_name):
+    def _update_recent_projects(self, project_name:str):
         # updates recent project list with project name.
+        project_name = format_project_name(project_name)
         recent_projects = self.get_recent_projects()
         if recent_projects is None:
             recent_projects = list()
@@ -317,7 +354,7 @@ class ProjectController:
         return self.subtitle_project_service.get_output_directory()
 
     def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True):
-
+        project_name = format_project_name(project_name)
         if new_branch:
             # for creating new branch.
             if self.current_project is None:
@@ -334,7 +371,7 @@ class ProjectController:
             print(f'Saving project {self.current_project}.')
             self.sync(compose=False)
             print(f'Creating new project {project_name}.')
-            self.create(project_name, compose=True)
+            self._create(project_name, compose=True)
             print(f'Successfully created {project_name}')
         
         else:
@@ -351,7 +388,7 @@ class ProjectController:
             confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
             if not confirm:
                 return
-            if project_name == self.current_project:
+            if project_name == format_project_name(self.current_project):
                 print(f'Current workspace is already assigned to {project_name}.')
                 return
 
@@ -371,7 +408,8 @@ class ProjectController:
             self.sync(compose=compose)
             print(f'Checkout successful.')
 
-    def create(self, project_name:str, compose:bool=True):            
+    def _create(self, project_name:str, compose:bool=True):
+        # create project.
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
         capture_path = self.studio_project_service.to_project_capture_path(project_name)
@@ -379,6 +417,20 @@ class ProjectController:
         self.subtitle_project_service.create()
         self.sync(compose=False)
         if compose:
+            self.compose()
+
+    def create(self, project_name:str, compose:bool=True):
+        project_name = format_project_name(project_name)
+        confirm = input(f'Create project {project_name} from {self.current_project}? (Y) ') == 'Y'
+        if not confirm:
+            return
+        
+        logger.info(f'Saving project {self.current_project}')
+        self.sync(compose=False)
+        logger.info(f'Creating project {project_name}')
+        self._create(project_name, compose=False)
+        if compose:
+            logger.info('Applying subtitles...')
             self.compose()
 
     def get_recent_projects(self) -> List[str]:
@@ -449,7 +501,7 @@ class ProjectController:
         
         projects.sort()
         if not projects:
-            print("No projects found in library.")
+            logger.info("No projects found in library.")
             return list()
         
         @spacing
@@ -492,10 +544,15 @@ class ProjectController:
             logger.error(f'No assigned project to sync with.')
             return
         self._sync_studio()
+        logger.info(f'Synced studio.')
         self._sync_workspace()
+        logger.info(f'Synced subtitle project.')
         self._pull_captures()
+        logger.info(f'Retrieved captures.')
         if compose:
+            logger.info(f'Applying subtitles...')
             self.compose(incremental_update=True)
+            logger.info(f'Applied subtitles.')
 
     def save_current_project(self):
         self.sync(compose=True)
@@ -518,11 +575,23 @@ class ProjectController:
         else:
             raise FileNotFoundError(self.library)
 
-    def open_game_directory(self):
-        if os.path.exists(self.game_directory):
-            os.startfile(self.game_directory)
-        else:
-            raise FileNotFoundError(self.game_directory)
+    def open_game_directory(self, shortcut:str=None):
+        dir = self.game_directory
+
+        if shortcut is None:
+            if not os.path.exists(dir):
+                raise FileNotFoundError(dir)
+            os.startfile(dir)
+            return
+            
+        subdir = self.settings.open_game_directory.shortcuts.get(shortcut)
+        if subdir is None:
+            raise KeyError(f"Shortcut \"{shortcut}\" not found")
+        dir = os.path.join(dir, subdir)
+        if not os.path.exists(dir):
+            raise FileNotFoundError(dir)
+        os.startfile(dir)
+        return
     
     def open_output_folders(self, drafts:str=None):
         output_dir = self.get_output_directory()
@@ -540,8 +609,19 @@ class ProjectController:
             folder = os.path.join(output_dir, folder)
             os.startfile(folder)
 
-    def export_gallery(self, destination, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False):
+    def export_gallery(
+            self, destination:str=None, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False
+    ):
         # export library outputs to destination.
+        try:
+            settings_destination = self.settings.export.destination
+            destination = coalesce(destination, settings_destination)
+        except AttributeError:
+            pass
+        
+        if destination is None:
+            raise TypeError('Destination is None.')
+
         if not os.path.exists(destination):
             raise FileNotFoundError(destination)
         
@@ -563,6 +643,46 @@ class ProjectController:
 
         if show_destination:
             os.startfile(destination)
+
+    def _merge_project(self, project_name:str):
+        # merge project into current project.
+        for merge_target in self.merge_targets:
+            source = os.path.join(self.studio_project_service.to_project_path(project_name), merge_target)
+            destination = os.path.join(self.game_directory, merge_target)
+            self.file_service.transfer(source, destination)
+        return
+
+    def merge_project(self, project_name:str):
+        # transfer items from project-name to current project.
+        # note: if the file exists with same name, it will be overridden.
+        project_name = format_project_name(project_name)
+        project_name = self._get_project_from_quick_access(project_name)
+        project_names = self.studio_project_service.list_projects(pattern=project_name)
+        
+        if not project_names:
+            print(f'No projects found.')
+            return
+
+        if len(project_names) == 1:
+            project_name = project_names[0]
+            confirm = input(f'Merge from {project_name} into current game? (Y) ') == 'Y'
+            pass
+        if len(project_names) > 1:
+            project_names = self.project_view.select_projects_from_list(self.current_project, project_names)
+            if not project_names:
+                return
+            for p in project_names:
+                print(f'- {p}')
+            print('You are about to merge the above projects into your current project. Files of the same name will be overridden.')
+            confirm = input(f'Proceed? (Y) ') == 'Y'
+
+        if not confirm:
+            return
+        
+        for p in project_names:
+            self._merge_project(p)
+            logger.info(f'Finished merging project {p}.')
+        return
 
     def close(self):
         # persist changes to metadata
