@@ -1,3 +1,4 @@
+natsort
 numpy
 opencv-python
 packaging
