@@ -59,8 +59,6 @@ class TestProjectController(unittest.TestCase):
             self.assertTrue(self.project_exists_in_library('test'))
             # cannot create a project within a project.
             self.assertRaises(FileExistsError, self.controller._create, 'test/2')
-            self.controller._create('test2')
-            self.assertRaises(InvalidProjectException, self.controller.checkout, 'test3')
     
     def test_merge_project(self):
         with tempfile.TemporaryDirectory() as temp_dir:

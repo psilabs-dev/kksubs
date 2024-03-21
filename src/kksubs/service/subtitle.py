@@ -53,7 +53,8 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
     elif os.path.exists(text_data.font):
         font_style = text_data.font
     else:
-        raise FileNotFoundError(text_data.font)
+        logger.error(f"Cannot find font asset {text_data.font}, using default font instead.")
+        font_style = "arial.ttf"
     
     # add default text data
     content[0] = text_data.text+content[0]

@@ -16,7 +16,7 @@ class SubtitleWatcher(FileChangeWatcher):
         self.watch_files([
             self.service.drafts_dir,
             self.service.images_dir,
-            os.path.join(self.service.project_directory, 'styles.yml')
+            os.path.join(self.service.workspace_dir, 'styles.yml')
         ])
 
         # arguments.
@@ -36,7 +36,9 @@ class SubtitleWatcher(FileChangeWatcher):
         self.allow_incremental_updating = allow_incremental_updating
 
     def event_trigger_action(self):
-        logger.info(f"{self.time()} Updates detected.")
+        formatted_time = self.time()
+        logger.info(f"{formatted_time} Updates detected.")
+        print(f"{formatted_time} Updates detected.")
         return self.service.add_subtitles(
             drafts=self.drafts, prefix=self.prefix,
             allow_multiprocessing=self.allow_multiprocessing,
@@ -45,4 +47,6 @@ class SubtitleWatcher(FileChangeWatcher):
             )
     
     def event_idle_action(self):
-        logger.info(f"{self.time()} No changes detected.")
+        formatted_time = self.time()
+        print(f"{formatted_time} No changes detected.")
+        logger.info(f"{formatted_time} No changes detected.")

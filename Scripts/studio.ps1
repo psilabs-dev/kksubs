@@ -1,0 +1,1 @@
+Invoke-Expression "& '$Env:KOIKATSU_PARTY_HOME\CharaStudio.exe'"

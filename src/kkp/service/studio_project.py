@@ -4,7 +4,8 @@ import os
 import re
 import shutil
 import fnmatch
-import time
+import tempfile
+from natsort import natsorted
 
 from common.data.file import Bucket
 from common.exceptions import InvalidProjectException
@@ -49,6 +50,9 @@ class StudioProjectService:
         return sync_state
 
     def to_project_path(self, project_name:str) -> str:
+        """
+        Convert project ID to path to the Project. Note that this Project may not yet exist, hence no abspath or realpath.
+        """
         return os.path.join(self.library, project_name)
 
     def is_project(self, project_name:str) -> bool:
@@ -80,6 +84,19 @@ class StudioProjectService:
             # if os.path.isdir(source_file_path):
             #     shutil.copytree(source_file_path, destination_file_path)
 
+    def directory_in_another_project(self, project_name: str) -> bool:
+        """
+        Return True if the directory given by the Project name is inside another Project.
+        """
+        target_dir = self.library
+        for level in re.split(r'[\/\\]', project_name):
+            if not os.path.exists(target_dir):
+                pass
+            if os.path.exists(os.path.join(target_dir, STUDIO_PROJECT_FILENAME)):
+                return True
+            target_dir = os.path.join(target_dir, level)
+        return False
+
     # CRUD operations.
     # create
     def create_project(self, project_name:str, source_project_path=None):
@@ -93,13 +110,8 @@ class StudioProjectService:
         project_path = self.to_project_path(project_name)
 
         # check if super directory is a project (if so, raise error).
-        target_dir = self.library
-        for level in re.split(r'[\/\\]', project_name):
-            if not os.path.exists(target_dir):
-                pass
-            if os.path.exists(os.path.join(target_dir, STUDIO_PROJECT_FILENAME)):
-                raise FileExistsError("Project is being created in another project directory.")
-            target_dir = os.path.join(target_dir, level)
+        if self.directory_in_another_project(project_name):
+            raise FileExistsError("Project is being created in another directory.")
 
         metadata_path = os.path.join(project_path, STUDIO_PROJECT_FILENAME)
         # check if metadata exists.
@@ -239,6 +251,39 @@ class StudioProjectService:
 
         return new_state
 
+    # rename project
+    def rename_project(self, current_project_id: str, new_project_id: str, safe=True) -> bool:
+        """
+        Renames the current Project, provided the new project name is not a subset of another Project.
+        Return True if successfully renamed, else False.
+        """
+
+        # validate current project ID
+        if not self.is_project(current_project_id):
+            logger.error(f"Cannot rename project {new_project_id}: cannot verify current project {current_project_id}.")
+            return False
+
+        # validate new project name.
+        if self.is_project(new_project_id) or self.directory_in_another_project(new_project_id):
+            logger.error(f"Cannot rename project {new_project_id}: Project cannot be contained in another project.")
+            return False
+        
+        new_project_path = self.to_project_path(new_project_id)
+        if os.path.exists(new_project_path):
+            logger.error(f"Cannot rename project {new_project_id}: A directory already exists here.")
+            return False
+        
+        # move old project to new project.
+        curr_project_path = self.to_project_path(current_project_id)
+        if safe:
+            confirmation = input(f"Move project {current_project_id} to {new_project_id}? (Y): ")
+            if confirmation != "Y":
+                print("cancelled")
+                return False
+
+        shutil.move(curr_project_path, new_project_path)
+        return True
+
     # delete
     def delete_project(self, project_name, safe=True) -> bool:
         # delete project from library.
@@ -301,3 +346,32 @@ class StudioProjectService:
             logger.info(f'Exported project \"{project_name}\".')
         
         return projects
+
+    def correct_scene_order(self) -> bool:
+        """
+        Correct order of scene files when sorted by modified/created time, which is how CharaStudio orders scenes. Return True if successful, else False.
+        """
+        scene_directory = os.path.join(self.game_directory, 'UserData', 'studio', 'scene')
+        if not os.path.exists(scene_directory):
+            logger.error(f"Scene directory {scene_directory} not found.")
+            return False
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Get a list of all .png files in the original directory
+            png_files = [file for file in os.listdir(scene_directory) if file.endswith('.png')]
+            png_files = natsorted(png_files)  # Sort files using natural sorting
+
+            # Move original images to the temporary directory
+            for png_file in png_files:
+                src_path = os.path.join(scene_directory, png_file)
+                dst_path = os.path.join(temp_dir, png_file)
+                shutil.move(src_path, dst_path)
+
+            # Copy images from the temporary directory back to the original directory
+            temp_files = os.listdir(temp_dir)
+            for temp_file in temp_files:
+                src_path = os.path.join(temp_dir, temp_file)
+                dst_path = os.path.join(scene_directory, temp_file)
+                shutil.copy(src_path, dst_path)
+        
+        return True

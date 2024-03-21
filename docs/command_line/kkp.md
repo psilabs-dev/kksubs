@@ -1,4 +1,6 @@
-# KKP Command Line Tool
+# KKP Command Line Tool (deprecated)
+
+> `kkp` is deprecated, use `koi` instead.
 
 `kkp` (Koikatsu Projects) is a command line tool that integrates subtitle projects with the Koikatsu Party game in a more integrated environment. 
 
