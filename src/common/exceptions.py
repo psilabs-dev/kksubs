@@ -11,3 +11,7 @@ class FolderCollisionException(Exception):
 class RetryWatcherPrompt(Exception):
     def __init__(self, *args: object) -> None:
         super().__init__('Retrying watcher as a result of exception.')
+
+class NotConfiguredException(Exception):
+    def __init__(self):
+        super().__init__("Application is not yet configured, run `koi configure` first.")

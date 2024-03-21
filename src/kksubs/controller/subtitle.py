@@ -8,16 +8,16 @@ from kksubs.watcher.subtitle import SubtitleWatcher
 logger = logging.getLogger(__name__)
 
 class SubtitleController:
-    def __init__(self, project_directory:str=None):
-        self.project_directory = None
+    def __init__(self, workspace_directory:str=None):
+        self.workspace_directory = None
         self.service = None
         self.watcher = None
-        if project_directory is not None:
-            self.configure(project_directory=project_directory)
+        if workspace_directory is not None:
+            self.configure(workspace_directory=workspace_directory)
 
-    def configure(self, project_directory:str):
-        self.project_directory = os.path.realpath(project_directory)
-        self.service = SubtitleProjectService(project_directory=self.project_directory)
+    def configure(self, workspace_directory:str):
+        self.workspace_directory = os.path.realpath(workspace_directory)
+        self.service = SubtitleProjectService(workspace_directory=self.workspace_directory)
         self.watcher = SubtitleWatcher(self.service)
 
     def get_scripts_directory(self):
