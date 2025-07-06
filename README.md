@@ -9,7 +9,8 @@
 ![processed-image](demo.png)
 
 ## Installation and Setup
-The program is intended to work on a Windows OS with Python versions 3.8-3.11.
+The program ~~is~~ *was* intended to work on a Windows OS with Python versions 3.10-3.12.
+However, I can only test this on Ubuntu now.
 
 Open a Python virtual environment and install the Git repository. For example:
 ```console

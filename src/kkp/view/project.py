@@ -19,7 +19,7 @@ class ProjectView:
             project_names = list(map(lambda s:project_list[int(s)], selections))
         return project_names
 
-    def select_project_from_list(self, current_project, project_list) -> Union[str, None]:
+    def select_project_from_list(self, current_project:str, project_list:List[str]) -> Union[str, None]:
         """
         Selects a valid project from existing list. Returns the project name if selection is valid, otherwise returns None.
         """

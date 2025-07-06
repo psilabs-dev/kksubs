@@ -1,6 +1,6 @@
-import pkg_resources
+import importlib.metadata
 
-KKSUBS_VERSION = pkg_resources.require('kksubs')[0].version
+KKSUBS_VERSION = importlib.metadata.version('kksubs')
 
 def get_kksubs_version():
     return KKSUBS_VERSION

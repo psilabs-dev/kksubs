@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import List, Optional, Dict, Set
 import os
 import re
@@ -208,7 +209,7 @@ class StudioProjectService:
                 new_state[file] = Bucket(path=workspace_file_path).files
         return new_state
 
-    def sync_studio_project(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
+    def sync_studio_project(self, project_name, previous_state:Optional[Dict]=None, last_sync_time:Optional[int]=None) -> Dict:
         # sync between library and workspace and returns the final state as output.
         new_state = dict()
         
@@ -228,7 +229,7 @@ class StudioProjectService:
 
         return new_state
     
-    def sync_subtitle_project(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
+    def sync_subtitle_project(self, project_name, previous_state:Optional[Dict]=None, last_sync_time:Optional[int]=None) -> Dict:
         new_state = dict()
 
         for file in self.subtitle_file_names:
@@ -317,11 +318,11 @@ class StudioProjectService:
             self.delete_project(name, safe=False)
         return True
     
-    def to_game_capture_path(self):
+    def to_game_capture_path(self) -> str:
         capture_path = os.path.join(self.game_directory, 'UserData/cap')
         return capture_path
 
-    def to_project_capture_path(self, project_name:str):
+    def to_project_capture_path(self, project_name:str) -> str:
         if not self.is_project(project_name):
             raise InvalidProjectException(project_name)
         project_path = self.to_project_path(project_name)
@@ -331,7 +332,7 @@ class StudioProjectService:
     def export_project_to_gallery(self, project_name, destination):
         cap_source = os.path.join(self.to_project_capture_path(project_name))
         cap_target = os.path.join(destination, project_name, 'cap')
-        output_source = os.path.join(self.to_project_path(project_name), 'kksubs-project\\output')
+        output_source = os.path.join(self.to_project_path(project_name), str(Path('kksubs-project') / 'output'))
         output_target = os.path.join(destination, project_name, 'output')
 
         # print(f'{cap_source}\n{cap_target}\n{output_source}\n{output_target}\n')
@@ -339,7 +340,7 @@ class StudioProjectService:
         self.file_service.sync_unidirectional(output_source, output_target)
         return
     
-    def export_gallery(self, destination:str, pattern:str=None):
+    def export_gallery(self, destination:str, pattern:Optional[str]=None):
         projects = self.list_projects(pattern=pattern)
         for project_name in projects:
             self.export_project_to_gallery(project_name, destination)

@@ -20,7 +20,7 @@ def create_text_layer(
     image_width, image_height = image.size
 
     text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
-    if content is None or not content:
+    if content is None or not content or font is None:
         return text_layer
 
     text_draw = ImageDraw.Draw(text_layer)
@@ -35,7 +35,7 @@ def create_text_layer(
         else:
             wrapped_text.append("")
     if not wrapped_text:
-        return image
+        return text_layer
 
     text_dimensions = [_get_text_dimensions(line, font, default_text_width=default_text_width, default_text_height=default_text_height) for line in wrapped_text]
     text_widths = list(map(lambda dim:dim[0], text_dimensions))

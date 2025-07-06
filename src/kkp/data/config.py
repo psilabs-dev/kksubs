@@ -1,6 +1,7 @@
 from abc import ABC
 import logging
-from typing import Dict, List
+from pathlib import Path
+from typing import Dict
 
 from common.data.representable import RepresentableData
 
@@ -63,10 +64,10 @@ class OpenGameDirectorySettings(Settings):
         if open_game_dir_settings_data is None:
             return OpenGameDirectorySettings(
                 shortcuts={
-                    "cap": "UserData\\cap",
-                    "chara": "UserData\\chara",
-                    "studio": "UserData\\studio",
-                    "scene": "UserData\\studio\\scene",
+                    "cap": str(Path("UserData") / "cap"),
+                    "chara": str(Path("UserData") / "chara"),
+                    "studio": str(Path("UserData") / "studio"),
+                    "scene": str(Path("UserData") / "studio" / "scene"),
                 },
             )
         return OpenGameDirectorySettings(**open_game_dir_settings_data)

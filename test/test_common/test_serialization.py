@@ -7,3 +7,8 @@
 
 # test a = A(b=B()), A.deserialize(a.serialize()) == a
 # etc.
+
+# Placeholder test to prevent pytest from complaining about empty test file
+def test_placeholder():
+    """Placeholder test - actual tests need to be implemented."""
+    pass

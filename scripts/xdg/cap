@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Check if environment variable is set
+if [ -z "$KOIKATSU_PARTY_HOME" ]; then
+    echo "Error: KOIKATSU_PARTY_HOME environment variable is not set"
+    exit 1
+fi
+
+# Build the target directory path
+TARGET_DIR="$KOIKATSU_PARTY_HOME/UserData/cap"
+
+# Check if directory exists
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Error: Directory does not exist: $TARGET_DIR"
+    exit 1
+fi
+
+# Open the directory
+xdg-open "$TARGET_DIR" 
