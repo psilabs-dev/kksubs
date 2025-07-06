@@ -71,7 +71,7 @@ def add_subtitle_process(
 
 class SubtitleProjectService:
     def __init__(
-            self, project_directory:str=None,
+            self, workspace_directory:str=None,
             metadata_directory:str=None,
             state_directory:str=None,
             images_dir:str=None,
@@ -79,26 +79,28 @@ class SubtitleProjectService:
             outputs_dir:str=None,
             styles_path:str=None,
     ):
-        if project_directory is None:
-            project_directory = "."
+        if workspace_directory is None:
+            raise NotImplementedError("Workspace directory must be implemented.")
         # if create is None:
         #     create = False
 
-        project_directory = os.path.realpath(project_directory)
-        if metadata_directory is None:
-            metadata_directory = os.path.join(project_directory, ".kksubs")
-        if state_directory is None:
-            state_directory = os.path.join(metadata_directory, 'state')
-        if images_dir is None:
-            images_dir = os.path.realpath(os.path.join(project_directory, "images"))
-        if drafts_dir is None:
-            drafts_dir = os.path.realpath(os.path.join(project_directory, "drafts"))
-        if outputs_dir is None:
-            outputs_dir = os.path.realpath(os.path.join(project_directory, "output"))
-        if styles_path is None:
-            styles_path = os.path.realpath(os.path.join(project_directory, "styles.yml"))
+        workspace_directory = os.path.realpath(workspace_directory)
 
-        self.project_directory = project_directory
+        if metadata_directory is None:
+            metadata_directory = os.path.join(os.path.expanduser("~"), ".kksubs")
+
+        if state_directory is None:
+            state_directory = os.path.join(metadata_directory, 'subtitle_journal')
+        if images_dir is None:
+            images_dir = os.path.realpath(os.path.join(workspace_directory, "images"))
+        if drafts_dir is None:
+            drafts_dir = os.path.realpath(os.path.join(workspace_directory, "drafts"))
+        if outputs_dir is None:
+            outputs_dir = os.path.realpath(os.path.join(workspace_directory, "output"))
+        if styles_path is None:
+            styles_path = os.path.realpath(os.path.join(workspace_directory, "styles.yml"))
+
+        self.workspace_dir = workspace_directory
         self.metadata_directory = metadata_directory
         self.state_directory = state_directory
         self.images_dir = images_dir
@@ -111,11 +113,11 @@ class SubtitleProjectService:
 
     def validate(self):
         if not (os.path.exists(self.images_dir) and os.path.exists(self.drafts_dir)):
-            raise InvalidProjectException(self.project_directory)
+            raise InvalidProjectException(self.workspace_dir)
         
     def create(self):
         # creates the necessary objects that constitute a kksubs project.
-        if not os.path.exists(self.project_directory):
+        if not os.path.exists(self.workspace_dir):
             raise FileNotFoundError
         changes_made = False
 
@@ -402,7 +404,7 @@ Original error message: {traceback.format_exc()}
                         font = subtitle.style.text_data.font
                         if font != "default" and not os.path.exists(font):
                             subtitle.style.text_data.font = os.path.join(
-                                self.project_directory, font
+                                self.workspace_dir, font
                             )
                     except AttributeError(f'Font does not exist for a subtitle for {image_path}.'): # font does not exist.
                         continue
@@ -443,17 +445,19 @@ Original error message: {traceback.format_exc()}
         num_of_images = len(subtitle_groups)
         output_image_paths = list(map(os.path.basename, map(lambda group:group.output_image_path, subtitle_groups)))
         logger.info(f"Will begin subtitling {num_of_images} images: {list(map(os.path.basename, output_image_paths))}")
+        print(f"Will begin subtitling {num_of_images} images: {list(map(os.path.basename, output_image_paths))}")
 
         start_time = time.time()
         if allow_multiprocessing:
             pool = multiprocessing.Pool()
-            pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.project_directory, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
+            pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.workspace_dir, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
             pool.close()
         else:
             for i, subtitle_group in enumerate(subtitle_groups):
-                add_subtitle_group_process(i, subtitle_group, self.project_directory, num_of_images)
+                add_subtitle_group_process(i, subtitle_group, self.workspace_dir, num_of_images)
         end_time = time.time()
         logger.info(f'Finished subtitling {num_of_images} images for draft {draft} ({end_time - start_time}s).')
+        print(f'Finished subtitling {num_of_images} images for draft {draft} ({end_time - start_time}s).')
         return
 
     def add_subtitles(self, drafts:Dict[str, List[int]]=None, prefix:str=None, allow_multiprocessing=True, allow_incremental_updating=None, update_drafts=True):
@@ -479,7 +483,7 @@ Original error message: {traceback.format_exc()}
             logger.info("Incremental updating is enabled.")
 
         if not os.path.exists(self.outputs_dir):
-            logger.info(f"Output directory for project {self.project_directory} not found, making one.")
+            logger.info(f"Output directory for project {self.workspace_dir} not found, making one.")
             os.makedirs(self.outputs_dir, exist_ok=True)
 
         # get image paths.
@@ -526,10 +530,6 @@ Original error message: {traceback.format_exc()}
                 for folder in folders:
                     shutil.rmtree(os.path.join(self.outputs_dir, folder))
                     logger.info(f"Removed folder {folder}")
-                
-                if os.path.exists(self.metadata_directory):
-                    logger.info("Removing additional project data directory.")
-                    shutil.rmtree(self.metadata_directory)
 
                 return 0
 
@@ -549,7 +549,7 @@ Original error message: {traceback.format_exc()}
         return 0
     
     def delete_project(self):
-        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.metadata_directory, self.styles_path]:
+        for path in [self.images_dir, self.outputs_dir, self.drafts_dir, self.styles_path]:
             if not os.path.exists(path):
                 continue
             if os.path.isdir(path):

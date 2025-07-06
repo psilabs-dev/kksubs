@@ -1,6 +1,6 @@
 # Koikatsu Automated Subtitles
 
-![Tests](https://github.com/pain-text-format/kksubs/actions/workflows/tests.yml/badge.svg)
+![Tests](https://github.com/psilabs-dev/kksubs/actions/workflows/tests.yml/badge.svg)
 
 > Command line tools to automate simple subtitle processing for Koikatsu stories.
 
@@ -13,7 +13,10 @@ The program is intended to work on a Windows OS with Python versions 3.8-3.11.
 
 Open a Python virtual environment and install the Git repository. For example:
 ```console
-$ pip install git+https://github.com/pain-text-format/kksubs.git
+$ pip install git+https://github.com/psilabs-dev/kksubs.git
 ```
-
-You can find an example project and usage [here](https://github.com/pain-text-format/kksubs-sample-project), and view [docs](docs/README.md) for more documentation.
+Configure the application:
+```console
+$ koi configure
+```
+Command line reference ([koi](docs\command_line\koi.md)).

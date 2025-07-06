@@ -17,6 +17,8 @@ from kkp.watcher.project import ProjectWatcher
 from common.utils.coalesce import coalesce
 from common.utils.file import *
 from common.utils.decorators import *
+from common.utils.application import *
+from common.exceptions import NotConfiguredException
 
 # config information
 CONFIG_FILE_NAME = 'config.yaml'
@@ -156,6 +158,119 @@ class ProjectController:
         with open(data_path, 'w') as writer:
             return yaml.safe_dump(data, writer)
 
+    def configure_v2(
+            self, 
+    ):
+        # configure_controller.
+
+        # application data is now located in the dotfolder ~/.kksubs.
+        if os.path.exists(get_config_path()) and os.path.exists(get_application_root()):
+            # read from config
+            with open(get_config_path(), "r", encoding="utf-8") as reader:
+                application_config = yaml.safe_load(reader)
+                library = application_config[LIBRARY_KEY]
+                game_directory = application_config[GAME_DIRECTORY_KEY]
+                workspace = application_config[WORKSPACE_KEY]
+            metadata_directory = os.path.join(get_application_root(), 'metadata')
+            os.makedirs(metadata_directory, exist_ok=True)
+        else:
+            raise NotConfiguredException()
+        
+        # retrieve metadata.
+        config_path = get_config_path()
+        data_path = os.path.join(metadata_directory, DATA_FILE_NAME)
+
+        config_info = self._read_config(config_path)
+        data_info = self._read_data(data_path)
+
+        config_info[GAME_DIRECTORY_KEY] = coalesce(game_directory, config_info.get(GAME_DIRECTORY_KEY))
+        config_info[LIBRARY_KEY] = coalesce(library, config_info.get(LIBRARY_KEY))
+        config_info[WORKSPACE_KEY] = coalesce(workspace, config_info.get(WORKSPACE_KEY))
+        config_info[SETTINGS_KEY] = config_info.get(SETTINGS_KEY)
+
+        data_info[CURRENT_PROJECT_KEY] = data_info.get(CURRENT_PROJECT_KEY)
+        data_info[SUBTITLE_SYNC_STATE_KEY] = data_info.get(SUBTITLE_SYNC_STATE_KEY)
+        data_info[STUDIO_SYNC_STATE_KEY] = data_info.get(STUDIO_SYNC_STATE_KEY)
+        data_info[SYNC_TIME_KEY] = data_info.get(SYNC_TIME_KEY)
+        data_info[QUICK_ACCESS_KEY] = data_info.get(QUICK_ACCESS_KEY)
+        data_info[LIST_PROJECT_HISTORY_KEY] = data_info.get(LIST_PROJECT_HISTORY_KEY)
+        data_info[RECENT_PROJECTS_KEY] = data_info.get(RECENT_PROJECTS_KEY)
+        data_info[VERSION_KEY] = data_info.get(VERSION_KEY)
+
+        # version comparison
+        version_from_data = data_info.get(VERSION_KEY)
+        current_version = get_kksubs_version()
+        if version_from_data is None or version.parse(version_from_data) < version.parse(current_version):
+            print(f'A different version {version_from_data} is detected (current version {current_version}).')
+
+            # check for, import, and remove old data files.
+            kks_data_file = os.path.join(metadata_directory, 'kksubs.yaml')
+            if os.path.exists(kks_data_file):
+                confirm = input('A kksubs.yaml file is detected. Import settings from that file? This will delete the kksubs.yaml file and create new config files. (Y) ') == "Y"
+                if confirm:
+                    previous_data = self._read_data(data_path=kks_data_file)
+
+                    for config_key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
+                        config_info[config_key] = coalesce(config_info.get(config_key), previous_data.get(config_key))
+
+                    for data_key in [
+                        CURRENT_PROJECT_KEY, 
+                        SUBTITLE_SYNC_STATE_KEY, 
+                        STUDIO_SYNC_STATE_KEY, 
+                        SYNC_TIME_KEY, 
+                        QUICK_ACCESS_KEY,
+                        LIST_PROJECT_HISTORY_KEY,
+                        RECENT_PROJECTS_KEY,
+                    ]:
+                        data_info[data_key] = coalesce(data_info.get(data_key), previous_data.get(data_key))
+                    logger.info('Deleting old data file.')
+                    os.remove(kks_data_file)
+
+        for key in [GAME_DIRECTORY_KEY, LIBRARY_KEY, WORKSPACE_KEY]:
+            path = config_info.get(key)
+            if path is None:
+                raise NotImplementedError(key)
+            if not os.path.exists(path):
+                raise FileNotFoundError(path)
+            config_info[key] = os.path.realpath(path)
+        
+        self.config_file_path = config_path
+        self.data_file_path = data_path
+
+        self.game_directory = config_info.get(GAME_DIRECTORY_KEY)
+        self.library = config_info.get(LIBRARY_KEY)
+        self.workspace = config_info.get(WORKSPACE_KEY)
+        self.settings = KKPSettings.deserialize(config_info.get(SETTINGS_KEY))
+
+        # # load settings
+        # if self.settings.log is not None:
+        #     level = self.settings.log.get_log_level()
+        #     if level is None:
+        #         pass
+        #     else:
+        #         logger.setLevel(level=level)
+
+        self.current_project = data_info.get(CURRENT_PROJECT_KEY)
+        self.subtitle_sync_state = data_info.get(SUBTITLE_SYNC_STATE_KEY)
+        self.studio_sync_state = data_info.get(STUDIO_SYNC_STATE_KEY)
+        self.last_sync_time = data_info.get(SYNC_TIME_KEY)
+        self.quick_access = data_info.get(QUICK_ACCESS_KEY)
+        self.list_project_history = data_info.get(LIST_PROJECT_HISTORY_KEY)
+        self.recent_projects = data_info.get(RECENT_PROJECTS_KEY)
+
+        self.subtitle_project_service = SubtitleProjectService(workspace_directory=self.workspace)
+        self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
+        self.project_view = ProjectView()
+
+        self.file_service = FileService()
+        # self.subtitle_watcher = SubtitleWatcher(self.subtitle_project_service)
+        self.project_watcher = ProjectWatcher(self.subtitle_project_service, self.studio_project_service)
+        self.project_watcher.load_watch_arguments(
+            allow_incremental_updating=True,
+            allow_multiprocessing=True,
+        )
+
+    @deprecated
     def configure(
             self, 
             metadata_directory:Optional[str], 
@@ -246,7 +361,7 @@ class ProjectController:
         self.list_project_history = data_info.get(LIST_PROJECT_HISTORY_KEY)
         self.recent_projects = data_info.get(RECENT_PROJECTS_KEY)
 
-        self.subtitle_project_service = SubtitleProjectService(project_directory=self.workspace)
+        self.subtitle_project_service = SubtitleProjectService(workspace_directory=self.workspace)
         self.studio_project_service = StudioProjectService(self.library, self.game_directory, self.workspace)
         self.project_view = ProjectView()
 
@@ -260,6 +375,7 @@ class ProjectController:
 
     @spacing
     def info(self, show_recent_projects:bool=False):
+
         print(f'Game:                {self.game_directory}')
         print(f'Library:             {self.library}')
         print(f'Workspace:           {self.workspace}')
@@ -276,10 +392,10 @@ class ProjectController:
 
         current_project = self.current_project
         if self.studio_project_service.is_project(current_project):
-            print(f'--- KKSUBS (working on \"{self.current_project}\") ---')
+            print(f'---- KKSUBS v-{get_kksubs_version()} (working on \"{self.current_project}\") ----')
         else:
             self._unassign(delete_project=False)
-            print('--- KKSUBS (no project assigned) ---')
+            print(f'---- KKSUBS v-{get_kksubs_version()} (no project assigned) ----')
 
     def compose(self, incremental_update:bool=None):
         self.subtitle_project_service.validate()
@@ -353,19 +469,24 @@ class ProjectController:
     def get_output_directory(self):
         return self.subtitle_project_service.get_output_directory()
 
-    def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True):
+    def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True) -> bool:
+        """
+        Checkout existing or new archive. Return True if successful checkout, else False.
+        """
+
         project_name = format_project_name(project_name)
         if new_branch:
             # for creating new branch.
             if self.current_project is None:
                 print('Cannot checkout from empty project. Please create a project first.')
-                return
+                return False
             
             parent_dir = os.path.dirname(self.current_project)
             project_name = os.path.join(parent_dir, project_name)
             confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
             if not confirm:
-                return
+                print('Checkout cancelled.')
+                return False
             
             # save changes before creating new branch.
             print(f'Saving project {self.current_project}.')
@@ -379,18 +500,23 @@ class ProjectController:
             project_list = self.studio_project_service.list_projects(project_name)
             # if existing branch, search for eligible branches.
             if len(project_list) == 0:
-                raise InvalidProjectException(project_name)
+                print(f"Cannot find existing project that matches pattern \"{project_name}\"; checkout cancelled.")
+                return False
             if len(project_list) == 1:
                 project_name = project_list[0]
             elif len(project_list) > 1:
                 project_name = self.project_view.select_project_from_list(self.current_project, project_list)
+                if project_name is None:
+                    print("Checkout cancelled.")
+                    return False
 
             confirm = self.project_view.confirm_project_checkout(self.current_project, project_name)
             if not confirm:
-                return
+                print("Checkout cancelled.")
+                return False
             if project_name == format_project_name(self.current_project):
                 print(f'Current workspace is already assigned to {project_name}.')
-                return
+                return False
 
             if self.current_project is not None and self.studio_project_service.is_project(self.current_project):
                 print(f'Saving project {self.current_project}.')
@@ -406,7 +532,9 @@ class ProjectController:
 
             print(f'Loading project {project_name}')
             self.sync(compose=compose)
+            self.studio_project_service.correct_scene_order()
             print(f'Checkout successful.')
+            return True
 
     def _create(self, project_name:str, compose:bool=True):
         # create project.
@@ -439,7 +567,7 @@ class ProjectController:
         
         for recent_project in self.recent_projects:
             if not self.studio_project_service.is_project(recent_project):
-                logger.error(f'Project {recent_project} is invalid.')
+                # logger.error(f'Project {recent_project} is invalid.')
                 self.recent_projects.remove(recent_project)
         
         while len(self.recent_projects) > self.recent_projects_limit:
@@ -485,7 +613,11 @@ class ProjectController:
 
         return recent_projects
 
-    def list_projects(self, pattern:str, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True) -> List[str]:
+    def list_projects(self, pattern:str, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True, is_display=True) -> List[str]:
+        """
+        Display a list of Projects whose ID fit a specific regex pattern.
+        """
+
         logger.info(f"Listing projects with pattern {pattern}.")
         if start_index is None:
             start_index = 0
@@ -503,15 +635,24 @@ class ProjectController:
         if not projects:
             logger.info("No projects found in library.")
             return list()
-        
+
         @spacing
-        def display():
-            print('List of projects:\n')
-            for i, project in enumerate(projects):
-                print(f"[{i+start_index}] {project}")
+        def display_project_list(reverse=False):
+            print('List of Projects:\n')
+
+            if not reverse:
+                for i, project in enumerate(projects):
+                    print(f"[{i+start_index}] {project}" + ("    <-- current" if self.current_project==project else ""))
+            else:
+                for i, project in reversed(list(enumerate(projects))):
+                    print(f"[{i+start_index}] {project}" + ("    <-- current" if self.current_project==project else ""))
+
             if limit is not None and limit < num_projects:
                 print('   ...')
-        display()
+
+        if is_display:
+            display_project_list()
+
         self.list_project_history = projects
 
         if update_quick_access:
@@ -519,13 +660,34 @@ class ProjectController:
 
         return projects
 
+    def rename(self, new_project_id: str):
+        """
+        Rename current project to a new project ID, provided the new project does not lie in an existing project.
+        """
+        is_renamed = self.studio_project_service.rename_project(self.current_project, new_project_id)
+        if is_renamed:
+            self.current_project = new_project_id
+            print(f"Successfully renamed project {self.current_project} to {new_project_id}.")
+            return
+        else:
+            print(f"Failed to rename project.")
+
     def delete(self, project_name:str, safe:bool=True):
+        """
+        Deletes an project from the library by project ID.
+        """
         project_name = self._get_project_from_quick_access(project_name)
-        self.studio_project_service.delete_project(project_name, safe=safe)
+
+        # project to delete cannot be current project.
         if project_name == self.current_project:
-            self._unassign()
-            self.subtitle_project_service.delete_project()
-        print(f'Deleted project {project_name}')
+            print("Cannot delete current project from library!")
+            # self._unassign()
+            # self.subtitle_project_service.delete_project()
+            return
+
+        is_deleted = self.studio_project_service.delete_project(project_name, safe=safe)
+        if is_deleted:
+            print(f"Deleted project {project_name}.")
 
     def _sync_studio(self):
         # just sync studio (game and library)
@@ -594,6 +756,9 @@ class ProjectController:
         return
     
     def open_output_folders(self, drafts:str=None):
+        """
+        Open the subtitled output images in file explorer.
+        """
         output_dir = self.get_output_directory()
         if drafts is not None and not drafts:
             for draft in drafts:
