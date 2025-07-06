@@ -1,4 +1,4 @@
-from abc import ABC, abstractclassmethod
+from abc import ABC, abstractmethod
 from typing import Dict
 
 class RepresentableData(ABC):
@@ -11,8 +11,9 @@ class RepresentableData(ABC):
             return False
         return self.__dict__ == __value.__dict__
     
-    @abstractclassmethod
-    def deserialize(self, data) -> "RepresentableData":
+    @classmethod
+    @abstractmethod
+    def deserialize(cls, data) -> "RepresentableData":
         ...
 
     def serialize(self) -> Dict:

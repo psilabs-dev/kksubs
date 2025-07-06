@@ -129,10 +129,6 @@ def command_line():
     if command == 'game':
         controller.open_game()
 
-    if command == 'game-folder':
-        shortcut = args.shortcut
-        controller.open_game_directory(shortcut=shortcut)
-
     if command == 'show':
         drafts = args.drafts
         controller.open_output_folders(drafts=drafts)

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kksubs"
+version = "3.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "natsort",
+    "numpy",
+    "opencv-python",
+    "packaging",
+    "pillow",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+
+[project.scripts]
+koi = "koi.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["test*"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"resources.fonts.roboto" = ["*.ttf"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

@@ -2,6 +2,8 @@ import logging
 import os
 from os.path import getmtime
 import subprocess
+import platform
+from pathlib import Path
 
 import shutil
 import time
@@ -12,6 +14,44 @@ from common.data.representable import RepresentableData
 from common.utils.coalesce import coalesce
 
 logger = logging.getLogger(__name__)
+
+
+def open_directory(path):
+    """
+    Cross-platform function to open a directory in the file manager.
+    
+    Args:
+        path: Path to the directory to open (str or Path object)
+    
+    Raises:
+        FileNotFoundError: If the directory doesn't exist
+        OSError: If the directory cannot be opened
+    """
+    from pathlib import Path
+    
+    # Convert to Path object for consistency
+    path = Path(path)
+    
+    # Check if path exists
+    if not path.exists():
+        raise FileNotFoundError(f"Directory not found: {path}")
+    
+    # Convert to string for subprocess calls
+    path_str = str(path)
+    
+    try:
+        system = platform.system()
+        if system == "Windows":
+            os.startfile(path_str)
+        elif system == "Darwin":  # macOS
+            subprocess.run(["open", path_str], check=True)
+        elif system == "Linux":
+            subprocess.run(["xdg-open", path_str], check=True)
+        else:
+            # Fallback for other Unix-like systems
+            subprocess.run(["xdg-open", path_str], check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        raise OSError(f"Failed to open directory {path}: {e}")
 
 
     # total_changes = len(undeleted_modified) + len(deleted_in_one_bucket) + len(added_in_one_bucket) + len(added_in_two_buckets)
@@ -225,16 +265,39 @@ def sync_unidirectional(source, destination, filename_filter:List[str]=None, ena
             dest_target = os.path.join(destination, target)
             sync_unidirectional(source_target, dest_target, enable_log=enable_log)
 
-    if os.path.isfile(source):
+    source_path = Path(source)
+    dest_path = Path(destination)
+    
+    if source_path.is_file():
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
         return
 
-    # run robocopy without outputting stuff.
-    command = ['robocopy', source, destination, '/MIR']
-    if enable_log:
-        subprocess.run(command)
+    # Cross-platform sync implementation
+    if platform.system() == 'Windows':
+        # Use robocopy on Windows
+        command = ['robocopy', str(source_path), str(dest_path), '/MIR']
+        if enable_log:
+            subprocess.run(command)
+        else:
+            subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
-        subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Use rsync on Unix/Linux systems, or fallback to Python implementation
+        if shutil.which('rsync'):
+            # Use rsync if available (preferred on Unix/Linux)
+            # Ensure paths end with / for directory sync
+            source_str = str(source_path) + '/'
+            dest_str = str(dest_path) + '/'
+            command = ['rsync', '-av', '--delete', source_str, dest_str]
+            if enable_log:
+                subprocess.run(command)
+            else:
+                subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            # Fallback to pure Python implementation
+            if enable_log:
+                logger.info(f"Using Python fallback for sync: {source} -> {destination}")
+            _sync_unidirectional(source, destination, filename_filter)
 
 def _get_bidirectional_deltas(
         bucket_a:Bucket, 
