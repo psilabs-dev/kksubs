@@ -6,6 +6,7 @@ import re
 import shutil
 import fnmatch
 import tempfile
+import datetime
 from natsort import natsorted
 
 from common.data.file import Bucket
@@ -350,29 +351,39 @@ class StudioProjectService:
 
     def correct_scene_order(self) -> bool:
         """
-        Correct order of scene files when sorted by modified/created time, which is how CharaStudio orders scenes. Return True if successful, else False.
+        Correct the modified time of files in the scene directory, iterating over each scene file.
+        This will allow Studio to sort files by name when loading scene thumbnails.
+
+        A file is a *scene file*, provided they have the following format:
+        - YYYY_MMDD_HHmm_ss_mmm.png (year, month, day, hour, minute, millisecond)
+            example: 2025_0713_0012_43_434.png
         """
         scene_directory = os.path.join(self.game_directory, 'UserData', 'studio', 'scene')
         if not os.path.exists(scene_directory):
             logger.error(f"Scene directory {scene_directory} not found.")
             return False
-        
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Get a list of all .png files in the original directory
-            png_files = [file for file in os.listdir(scene_directory) if file.endswith('.png')]
-            png_files = natsorted(png_files)  # Sort files using natural sorting
-
-            # Move original images to the temporary directory
-            for png_file in png_files:
-                src_path = os.path.join(scene_directory, png_file)
-                dst_path = os.path.join(temp_dir, png_file)
-                shutil.move(src_path, dst_path)
-
-            # Copy images from the temporary directory back to the original directory
-            temp_files = os.listdir(temp_dir)
-            for temp_file in temp_files:
-                src_path = os.path.join(temp_dir, temp_file)
-                dst_path = os.path.join(scene_directory, temp_file)
-                shutil.copy(src_path, dst_path)
-        
-        return True
+        scene_pattern = re.compile(r'(\d{4})_(\d{2})(\d{2})_(\d{2})(\d{2})_(\d{2})_(\d{3})\.png')
+        try:
+            for root, _, files in os.walk(scene_directory):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    match = scene_pattern.match(file)
+                    if match:
+                        year, month, day, hour, minute, second, millisecond = match.groups()
+                        dt = datetime.datetime(
+                            int(year),
+                            int(month),
+                            int(day),
+                            int(hour),
+                            int(minute),
+                            int(second),
+                            int(millisecond) * 1000  # Convert milliseconds to microseconds
+                        )
+                        timestamp = dt.timestamp()
+                        os.utime(file_path, (timestamp, timestamp))
+                        logger.info(f"Updated timestamp for {file} to {dt}")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error correcting scene order: {e}")
+            return False
