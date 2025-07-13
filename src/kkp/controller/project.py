@@ -496,6 +496,21 @@ class ProjectController:
                 raise ValueError("Subtitle project service is None")
             self.subtitle_project_service.delete_project()
 
+    def _clean_userdata_directory(self):
+        """
+        Clean up the UserData directory in the game directory to prevent 
+        directory structure conflicts during checkout.
+        """
+        if self.game_directory is None:
+            raise ValueError("Game directory is None")
+        
+        userdata_path = os.path.join(self.game_directory, 'UserData')
+        if os.path.exists(userdata_path):
+            import shutil
+            logger.info(f"Cleaning up UserData directory: {userdata_path}")
+            shutil.rmtree(userdata_path)
+            logger.info("UserData directory cleaned up successfully")
+
     def _pull_captures(self):
         # just sync captures (library and kksub project)
         if self.studio_project_service is None:
@@ -626,6 +641,7 @@ class ProjectController:
             
             print(f'Checking out {project_name}.')
             self._unassign(delete_project=True)
+            self._clean_userdata_directory()
             self._assign(project_name)
             self._pull_to_subtitle_project()
 

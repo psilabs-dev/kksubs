@@ -9,7 +9,5 @@ def get_application_root() -> pathlib.Path:
     return __get_home_directory() / ".kksubs"
 
 def get_config_path() -> pathlib.Path:
-    return __get_home_directory() / "config.yaml"
+    return __get_home_directory() / ".kksubs" / "config.yaml"
 
-def get_data_filepath() -> pathlib.Path:
-    return __get_home_directory() / "kksubs.yaml"
