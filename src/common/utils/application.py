@@ -1,16 +1,13 @@
-import os
+import pathlib
 
 # common application related functions.
 
-def get_home_directory() -> str:
-    return os.path.expanduser("~")
+def __get_home_directory() -> pathlib.Path:
+    return pathlib.Path.home()
 
-def get_application_root() -> str:
-    return os.path.join(get_home_directory(), ".kksubs")
+def get_application_root() -> pathlib.Path:
+    return __get_home_directory() / ".kksubs"
 
-def get_config_path() -> str:
-    return os.path.join(get_application_root(), "config.yaml")
-
-def get_data_filepath() -> str:
-    return os.path.join(get_application_root(), "kksubs.yaml")
+def get_config_path() -> pathlib.Path:
+    return __get_home_directory() / ".kksubs" / "config.yaml"
 

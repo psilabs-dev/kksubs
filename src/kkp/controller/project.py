@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 from typing import List, Optional
 import yaml
 from common.exceptions import InvalidProjectException
@@ -49,29 +50,66 @@ class ProjectController:
 
     def __init__(
             self,
-            game_directory:str=None,
-            library:str=None,
-            config_file_path:str=None,
-            workspace:str=None,
+            game_directory:Optional[str | Path]=None,
+            library:Optional[str | Path]=None,
+            config_file_path:Optional[str | Path]=None,
+            workspace:Optional[str | Path]=None,
 
-            data_file_path:str=None,
-            subtitle_project_service:SubtitleProjectService=None,
-            studio_project_service:StudioProjectService=None,
-            project_view:ProjectView=None,
+            data_file_path:Optional[str | Path]=None,
+            subtitle_project_service:Optional[SubtitleProjectService]=None,
+            studio_project_service:Optional[StudioProjectService]=None,
+            project_view:Optional[ProjectView]=None,
 
-            current_project:str=None,
+            current_project:Optional[str]=None,
     ):
         
         logger.info('Creating project controller...')
-        self.config_file_path = config_file_path
-        self.game_directory = game_directory
-        self.library = library
-        self.workspace = workspace
-        self.settings:KKPSettings = None
 
-        self.current_project = current_project
+        if game_directory:
+            if isinstance(game_directory, str):
+                _game_directory = Path(game_directory)
+            else:
+                _game_directory = game_directory
+        else:
+            _game_directory = None
+        if library:
+            if isinstance(library, str):
+                _library = Path(library)
+            else:
+                _library = library
+        else:
+            _library = None
+        if config_file_path:
+            if isinstance(config_file_path, str):
+                _config_file_path = Path(config_file_path)
+            else:
+                _config_file_path = config_file_path
+        else:
+            _config_file_path = None
+        if workspace:
+            if isinstance(workspace, str):
+                _workspace = Path(workspace)
+            else:
+                _workspace = workspace
+        else:
+            _workspace = None
+        if data_file_path:
+            if isinstance(data_file_path, str):
+                _data_file_path = Path(data_file_path)
+            else:
+                _data_file_path = data_file_path
+        else:
+            _data_file_path = None
 
-        self.data_file_path = data_file_path
+        self.config_file_path: Optional[Path] = _config_file_path
+        self.game_directory: Optional[Path] = _game_directory
+        self.library: Optional[Path] = _library
+        self.workspace: Optional[Path] = _workspace
+        self.settings:Optional[KKPSettings] = None
+
+        self.current_project: Optional[str] = current_project
+
+        self.data_file_path: Optional[Path] = _data_file_path
         self.subtitle_sync_state = None
         self.studio_sync_state = None
         self.last_sync_time = None
@@ -82,10 +120,10 @@ class ProjectController:
         self.project_watcher = None
         self.project_view = project_view
 
-        self.quick_access:List[str] = None
-        self.list_project_history:List[str] = None
+        self.quick_access:Optional[List[str]] = None
+        self.list_project_history:Optional[List[str]] = None
         self.list_project_limit:int = 10
-        self.recent_projects:List[str] = None
+        self.recent_projects:Optional[List[str]] = None
         self.recent_projects_limit:int = 5
 
         self.export_map = {
@@ -93,56 +131,83 @@ class ProjectController:
             'kksubs-project/output': 'output',
         }
         self.merge_targets = {
-            'UserData\\bg',
-            # 'UserData\\cap',
-            'UserData\\cardframe',
-            'UserData\\chara',
-            # 'UserData\\config',
-            'UserData\\coordinate',
-            # 'UserData\\custom',
-            # 'UserData\\LauncherEN',
-            'UserData\\MaterialEditor',
-            'UserData\\Overlays',
-            # 'UserData\\pattern',
-            # 'UserData\\pattern_thumb',
-            # 'UserData\\save',
-            'UserData\\studio',
+            str(Path('UserData') / 'bg'),
+            # str(Path('UserData') / 'cap'),
+            str(Path('UserData') / 'cardframe'),
+            str(Path('UserData') / 'chara'),
+            # str(Path('UserData') / 'config'),
+            str(Path('UserData') / 'coordinate'),
+            # str(Path('UserData') / 'LauncherEN'),
+            str(Path('UserData') / 'MaterialEditor'),
+            str(Path('UserData') / 'Overlays'),
+            # str(Path('UserData') / 'pattern'),
+            # str(Path('UserData') / 'pattern_thumb'),
+            # str(Path('UserData') / 'save'),
+            str(Path('UserData') / 'studio'),
         }
 
-    def _get_config_file_path(self, config_path:str=None):
-        return coalesce(config_path, self.config_file_path)
+    def _get_config_file_path(self, config_path:Optional[str | Path]=None) -> Optional[Path]:
+        result = coalesce(config_path, self.config_file_path)
+        if isinstance(result, Path):
+            return result
+        if isinstance(result, str):
+            return Path(result)
+        if result is None:
+            return None
+        raise TypeError(f"Invalid config path: {result}")
 
-    def _get_data_file_path(self, data_file_path:str=None):
-        return coalesce(data_file_path, self.data_file_path)
+    def _get_data_file_path(self, data_file_path:Optional[str | Path]=None) -> Optional[Path]:
+        result = coalesce(data_file_path, self.data_file_path)
+        if isinstance(result, Path):
+            return result
+        if isinstance(result, str):
+            return Path(result)
+        if result is None:
+            return None
+        raise TypeError(f"Invalid data file path: {result}")
 
-    def _read_config(self, config_file_path:str=None) -> Dict:
+    def _read_config(self, config_file_path:Optional[str | Path]=None) -> Dict:
         config_file_path = self._get_config_file_path(config_path=config_file_path)
-        if not os.path.exists(config_file_path):
+        if config_file_path is None or not config_file_path.exists():
             return dict()
-        with open(config_file_path, 'r') as reader:
-            return coalesce(yaml.safe_load(reader), dict())
+        with open(config_file_path, 'r', encoding='utf-8') as reader:
+            result = yaml.safe_load(reader)
+            if result is None:
+                return dict()
+            return result
         
-    def _write_config(self, config_path:str=None):
+    def _write_config(self, config_path:Optional[str | Path]=None):
         if self.workspace is None:
             return
+        if self.settings:
+            settings = self.settings.serialize()
+        else:
+            settings = None
         config = {
             GAME_DIRECTORY_KEY: self.game_directory,
             LIBRARY_KEY: self.library,
             WORKSPACE_KEY: self.workspace,
-            SETTINGS_KEY: self.settings.serialize(),
+            SETTINGS_KEY: settings,
         }
         config_path = self._get_config_file_path(config_path=config_path)
-        with open(config_path, 'w') as writer:
-            return yaml.safe_dump(config, writer)
+        if config_path:
+            with open(config_path, 'w') as writer:
+                return yaml.safe_dump(config, writer)
+        else:
+            raise ValueError("Config path is None")
 
-    def _read_data(self, data_path:str=None) -> Dict:
+    def _read_data(self, data_path:Optional[str | Path]=None) -> Dict:
         data_file_path = self._get_data_file_path(data_file_path=data_path)
-        if not os.path.exists(data_file_path):
-            return dict()
-        with open(data_file_path, 'r') as reader:
-            return coalesce(yaml.safe_load(reader), dict())
+        if data_file_path:
+            if data_file_path.exists():
+                with open(data_file_path, 'r', encoding='utf-8') as reader:
+                    result = yaml.safe_load(reader)
+                    if result is None:
+                        return dict()
+                    return result
+        return dict()
 
-    def _write_data(self, data_path:str=None):
+    def _write_data(self, data_path:Optional[str | Path]=None):
         if self.workspace is None:
             return
         data = {
@@ -155,8 +220,11 @@ class ProjectController:
             VERSION_KEY: get_kksubs_version(),
         }
         data_path = self._get_data_file_path(data_file_path=data_path)
-        with open(data_path, 'w') as writer:
-            return yaml.safe_dump(data, writer)
+        if data_path:
+            with open(data_path, 'w', encoding='utf-8') as writer:
+                return yaml.safe_dump(data, writer)
+        else:
+            raise ValueError("Data path is None")
 
     def configure_v2(
             self, 
@@ -164,21 +232,21 @@ class ProjectController:
         # configure_controller.
 
         # application data is now located in the dotfolder ~/.kksubs.
-        if os.path.exists(get_config_path()) and os.path.exists(get_application_root()):
+        if (config_path := get_config_path()) and config_path.exists() and (application_root := get_application_root()) and application_root.exists():
             # read from config
-            with open(get_config_path(), "r", encoding="utf-8") as reader:
+            with open(config_path, "r", encoding="utf-8") as reader:
                 application_config = yaml.safe_load(reader)
                 library = application_config[LIBRARY_KEY]
                 game_directory = application_config[GAME_DIRECTORY_KEY]
                 workspace = application_config[WORKSPACE_KEY]
-            metadata_directory = os.path.join(get_application_root(), 'metadata')
-            os.makedirs(metadata_directory, exist_ok=True)
+            metadata_directory = application_root / 'metadata'
+            metadata_directory.mkdir(exist_ok=True)
         else:
             raise NotConfiguredException()
         
         # retrieve metadata.
         config_path = get_config_path()
-        data_path = os.path.join(metadata_directory, DATA_FILE_NAME)
+        data_path = metadata_directory / DATA_FILE_NAME
 
         config_info = self._read_config(config_path)
         data_info = self._read_data(data_path)
@@ -280,8 +348,11 @@ class ProjectController:
     ):
         # configures controller.
         # retrieve metadata.
-        config_path = os.path.join(metadata_directory, CONFIG_FILE_NAME)
-        data_path = os.path.join(metadata_directory, DATA_FILE_NAME)
+        if metadata_directory is None:
+            raise ValueError("Metadata directory is None")
+
+        config_path = Path(metadata_directory) / CONFIG_FILE_NAME
+        data_path = Path(metadata_directory) / DATA_FILE_NAME
 
         config_info = self._read_config(config_path)
         data_info = self._read_data(data_path)
@@ -391,13 +462,15 @@ class ProjectController:
             raise Exception((projects, recent_projects))
 
         current_project = self.current_project
-        if self.studio_project_service.is_project(current_project):
+        if current_project is not None and self.studio_project_service.is_project(current_project):
             print(f'---- KKSUBS v-{get_kksubs_version()} (working on \"{self.current_project}\") ----')
         else:
             self._unassign(delete_project=False)
             print(f'---- KKSUBS v-{get_kksubs_version()} (no project assigned) ----')
 
-    def compose(self, incremental_update:bool=None):
+    def compose(self, incremental_update:bool=True):
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
         self.subtitle_project_service.validate()
         self.subtitle_project_service.add_subtitles(allow_incremental_updating=incremental_update, update_drafts=True)
 
@@ -405,26 +478,57 @@ class ProjectController:
         # continuously compose
         def sync_func():
             self.sync(compose=False)
+        if self.project_watcher is None:
+            raise ValueError("Project watcher is None")
         self.project_watcher.pass_sync(sync_func)
         self.project_watcher.watch()
 
     def clear(self):
         # clear outputs and metadata
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
         self.subtitle_project_service.clear_subtitles(force=True)
 
     def _unassign(self, delete_project:bool=True):
         self.current_project = None
         if delete_project:
+            if self.subtitle_project_service is None:
+                raise ValueError("Subtitle project service is None")
             self.subtitle_project_service.delete_project()
+
+    def _clean_userdata_directory(self):
+        """
+        Clean up the UserData directory in the game directory to prevent 
+        directory structure conflicts during checkout.
+        """
+        if self.game_directory is None:
+            raise ValueError("Game directory is None")
+        
+        userdata_path = os.path.join(self.game_directory, 'UserData')
+        if os.path.exists(userdata_path):
+            import shutil
+            logger.info(f"Cleaning up UserData directory: {userdata_path}")
+            shutil.rmtree(userdata_path)
+            logger.info("UserData directory cleaned up successfully")
 
     def _pull_captures(self):
         # just sync captures (library and kksub project)
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
+        if self.current_project is None:
+            raise ValueError("Current project is None")
         capture_path = self.studio_project_service.to_project_capture_path(self.current_project)
         self.file_service.sync_unidirectional(capture_path, self.subtitle_project_service.images_dir)
 
     def _pull_to_subtitle_project(self):
         # pull archived subtitle project (if exists) to workspace.
         project_name = self.current_project
+        if project_name is None:
+            raise ValueError("Current project is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         if self.studio_project_service.is_project(project_name):
             # pull contents of the project over.
             studio_project_path = self.studio_project_service.to_project_path(project_name)
@@ -466,13 +570,24 @@ class ProjectController:
                 project_name = previous_projects[int(project_name)]
         return project_name
     
-    def get_output_directory(self):
+    def get_output_directory(self) -> str:
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
         return self.subtitle_project_service.get_output_directory()
 
     def checkout(self, project_name:str, new_branch:bool=False, compose:bool=True) -> bool:
         """
         Checkout existing or new archive. Return True if successful checkout, else False.
         """
+        if self.current_project is None:
+            raise ValueError("Current project is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        if self.project_view is None:
+            raise ValueError("Project view is None")
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
+
 
         project_name = format_project_name(project_name)
         if new_branch:
@@ -496,6 +611,8 @@ class ProjectController:
             print(f'Successfully created {project_name}')
         
         else:
+            if self.current_project is None:
+                raise ValueError("Current project is None")
             project_name = self._get_project_from_quick_access(project_name)
             project_list = self.studio_project_service.list_projects(project_name)
             # if existing branch, search for eligible branches.
@@ -524,6 +641,7 @@ class ProjectController:
             
             print(f'Checking out {project_name}.')
             self._unassign(delete_project=True)
+            self._clean_userdata_directory()
             self._assign(project_name)
             self._pull_to_subtitle_project()
 
@@ -538,6 +656,12 @@ class ProjectController:
 
     def _create(self, project_name:str, compose:bool=True):
         # create project.
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        if self.subtitle_project_service is None:
+            raise ValueError("Subtitle project service is None")
+        if self.file_service is None:
+            raise ValueError("File service is None")
         self.studio_project_service.create_project(project_name)
         self._assign(project_name)
         capture_path = self.studio_project_service.to_project_capture_path(project_name)
@@ -562,6 +686,8 @@ class ProjectController:
             self.compose()
 
     def get_recent_projects(self) -> List[str]:
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         if self.recent_projects is None:
             return list()
         
@@ -581,7 +707,7 @@ class ProjectController:
     def set_quick_access(self, project_list:List[str]):
         self.quick_access = project_list
 
-    def list_recent_projects(self, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True) -> List[str]:
+    def list_recent_projects(self, limit:Optional[int]=None, start_index:Optional[int]=None, update_quick_access:bool=True) -> List[str]:
         logger.info(f'Listing recent projects.')
         if start_index is None:
             start_index = 0
@@ -613,11 +739,12 @@ class ProjectController:
 
         return recent_projects
 
-    def list_projects(self, pattern:str, limit:Optional[int]=None, start_index:int=None, update_quick_access:bool=True, is_display=True) -> List[str]:
+    def list_projects(self, pattern:str, limit:Optional[int]=None, start_index:Optional[int]=None, update_quick_access:bool=True, is_display=True) -> List[str]:
         """
         Display a list of Projects whose ID fit a specific regex pattern.
         """
-
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         logger.info(f"Listing projects with pattern {pattern}.")
         if start_index is None:
             start_index = 0
@@ -664,6 +791,10 @@ class ProjectController:
         """
         Rename current project to a new project ID, provided the new project does not lie in an existing project.
         """
+        if self.current_project is None:
+            raise ValueError("Current project is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         is_renamed = self.studio_project_service.rename_project(self.current_project, new_project_id)
         if is_renamed:
             self.current_project = new_project_id
@@ -684,20 +815,29 @@ class ProjectController:
             # self._unassign()
             # self.subtitle_project_service.delete_project()
             return
-
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         is_deleted = self.studio_project_service.delete_project(project_name, safe=safe)
         if is_deleted:
             print(f"Deleted project {project_name}.")
 
     def _sync_studio(self):
         # just sync studio (game and library)
-        previous_state = self.studio_sync_state
+        if self.current_project is None:
+            raise ValueError("Current project is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        previous_state: Optional[Dict] = self.studio_sync_state
         new_sync_state = self.studio_project_service.sync_studio_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.studio_sync_state = new_sync_state
 
     def _sync_workspace(self):
         # sync workspace into library (no need to sync captures)
-        previous_state = self.subtitle_sync_state
+        if self.current_project is None:
+            raise ValueError("Current project is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        previous_state: Optional[Dict] = self.subtitle_sync_state
         new_sync_state = self.studio_project_service.sync_subtitle_project(self.current_project, previous_state=previous_state, last_sync_time=self.last_sync_time)
         self.subtitle_sync_state = new_sync_state
 
@@ -719,52 +859,71 @@ class ProjectController:
     def save_current_project(self):
         self.sync(compose=True)
 
+    def _find_executable(self, base_name: str) -> Optional[str]:
+        """Find executable with cross-platform support."""
+        import platform
+        
+        if self.game_directory is None:
+            return None
+            
+        # Try different executable extensions based on platform
+        if platform.system() == "Windows":
+            extensions = ['.exe']
+        else:
+            # On Linux/Mac, try no extension first, then .exe (for Wine)
+            extensions = ['', '.exe']
+        
+        for ext in extensions:
+            exe_path = os.path.join(self.game_directory, f'{base_name}{ext}')
+            if os.path.exists(exe_path):
+                return exe_path
+        
+        return None
+
     def open_studio(self):
-        studio_exe_path = os.path.join(self.game_directory, 'CharaStudio.exe')
+        if self.game_directory is None:
+            raise ValueError("Game directory is None")
+        
+        studio_exe_path = self._find_executable('CharaStudio')
+        if studio_exe_path is None:
+            raise FileNotFoundError("CharaStudio executable not found")
+        
         print(f'Launching Studio; please wait...')
         subprocess.Popen(studio_exe_path)
         return
 
     def open_game(self):
-        game_exe_path = os.path.join(self.game_directory, 'Koikatsu Party.exe')
+        if self.game_directory is None:
+            raise ValueError("Game directory is None")
+        
+        game_exe_path = self._find_executable('Koikatsu Party')
+        if game_exe_path is None:
+            raise FileNotFoundError("Koikatsu Party executable not found")
+        
         print(f'Launching Koikatsu Party; please wait...')
         subprocess.Popen(game_exe_path)
         return
     
     def open_library_directory(self):
-        if os.path.exists(self.library):
-            os.startfile(self.library)
-        else:
+        if self.library is None:
+            raise ValueError("Library is None")
+        if not self.library.exists():
             raise FileNotFoundError(self.library)
-
-    def open_game_directory(self, shortcut:str=None):
-        dir = self.game_directory
-
-        if shortcut is None:
-            if not os.path.exists(dir):
-                raise FileNotFoundError(dir)
-            os.startfile(dir)
-            return
-            
-        subdir = self.settings.open_game_directory.shortcuts.get(shortcut)
-        if subdir is None:
-            raise KeyError(f"Shortcut \"{shortcut}\" not found")
-        dir = os.path.join(dir, subdir)
-        if not os.path.exists(dir):
-            raise FileNotFoundError(dir)
-        os.startfile(dir)
-        return
+        from common.utils.file import open_directory
+        open_directory(self.library)
     
-    def open_output_folders(self, drafts:str=None):
+    def open_output_folders(self, drafts:Optional[str]=None):
         """
         Open the subtitled output images in file explorer.
         """
         output_dir = self.get_output_directory()
+        from common.utils.file import open_directory
+        
         if drafts is not None and not drafts:
             for draft in drafts:
                 draft_folder = os.path.join(output_dir, draft)
                 if os.path.exists(draft_folder):
-                    os.startfile(draft_folder)
+                    open_directory(draft_folder)
                 else:
                     raise FileNotFoundError(draft_folder)
                 return
@@ -772,11 +931,20 @@ class ProjectController:
         folders = os.listdir(output_dir)
         for folder in folders:
             folder = os.path.join(output_dir, folder)
-            os.startfile(folder)
+            open_directory(folder)
 
     def export_gallery(
-            self, destination:str=None, pattern:str=None, clean:bool=False, show_destination:bool=False, force:bool=False
+            self, 
+            destination:Optional[str]=None, 
+            pattern:Optional[str]=None, 
+            clean:bool=False, 
+            show_destination:bool=False, 
+            force:bool=False
     ):
+        if self.settings is None:
+            raise ValueError("Settings is None")
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
         # export library outputs to destination.
         try:
             settings_destination = self.settings.export.destination
@@ -807,10 +975,17 @@ class ProjectController:
         print(f'Finished exporting {len(projects)} projects.')
 
         if show_destination:
-            os.startfile(destination)
+            from common.utils.file import open_directory
+            open_directory(destination)
 
     def _merge_project(self, project_name:str):
         # merge project into current project.
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        if self.game_directory is None:
+            raise ValueError("Game directory is None")
+        if self.file_service is None:
+            raise ValueError("File service is None")
         for merge_target in self.merge_targets:
             source = os.path.join(self.studio_project_service.to_project_path(project_name), merge_target)
             destination = os.path.join(self.game_directory, merge_target)
@@ -820,6 +995,10 @@ class ProjectController:
     def merge_project(self, project_name:str):
         # transfer items from project-name to current project.
         # note: if the file exists with same name, it will be overridden.
+        if self.studio_project_service is None:
+            raise ValueError("Studio project service is None")
+        if self.project_view is None:
+            raise ValueError("Project view is None")
         project_name = format_project_name(project_name)
         project_name = self._get_project_from_quick_access(project_name)
         project_names = self.studio_project_service.list_projects(pattern=project_name)

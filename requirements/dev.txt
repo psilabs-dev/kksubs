@@ -1,7 +1,0 @@
-natsort
-numpy
-opencv-python
-packaging
-pillow
-pyyaml
-tox

@@ -7,6 +7,7 @@ from typing import Dict, List
 import yaml
 import multiprocessing
 import time
+from natsort import natsorted
 
 import pickle
 
@@ -174,7 +175,9 @@ class SubtitleProjectService:
         return list(filter(lambda draft:os.path.splitext(draft)[1] in {".txt"}, os.listdir(self.drafts_dir)))
 
     def filter_images(self, file_list):
-        return list(map(lambda image: os.path.join(file_list, image), filter(lambda file: os.path.isfile(os.path.join(file_list, file)) and os.path.splitext(file)[1] in {".png"} ,os.listdir(file_list))))
+        # Sort filenames naturally to ensure consistent ordering across different filesystems
+        sorted_files = natsorted(os.listdir(file_list))
+        return list(map(lambda image: os.path.join(file_list, image), filter(lambda file: os.path.isfile(os.path.join(file_list, file)) and os.path.splitext(file)[1] in {".png"} ,sorted_files)))
 
     def get_image_paths(self):
         return self.filter_images(self.images_dir)
@@ -448,10 +451,18 @@ Original error message: {traceback.format_exc()}
         print(f"Will begin subtitling {num_of_images} images: {list(map(os.path.basename, output_image_paths))}")
 
         start_time = time.time()
+        # Note: Windows uses spawn while Linux uses fork.
         if allow_multiprocessing:
             pool = multiprocessing.Pool()
-            pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.workspace_dir, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
-            pool.close()
+            try:
+                pool.starmap(add_subtitle_group_process, [(i, subtitle_group, self.workspace_dir, num_of_images) for i, subtitle_group in enumerate(subtitle_groups)])
+                pool.close()
+                pool.join()
+            except KeyboardInterrupt:
+                logger.info("Received KeyboardInterrupt, terminating worker processes...")
+                pool.terminate()
+                pool.join()
+                raise
         else:
             for i, subtitle_group in enumerate(subtitle_groups):
                 add_subtitle_group_process(i, subtitle_group, self.workspace_dir, num_of_images)

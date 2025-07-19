@@ -1,6 +1,6 @@
 import logging
 import os
-import pkg_resources
+import importlib.metadata
 import yaml
 
 from common.utils.application import get_application_root, get_config_path
@@ -8,7 +8,7 @@ from common.utils.application import get_application_root, get_config_path
 logger = logging.getLogger(__name__)
 
 def show_application_version():
-    KKSUBS_VERSION = pkg_resources.require('kksubs')[0].version
+    KKSUBS_VERSION = importlib.metadata.version('kksubs')
     print(KKSUBS_VERSION)
     return 0
 
@@ -16,7 +16,7 @@ def configure_application():
     logger.info("Configuring application...")
 
     # check if configs exist
-    if os.path.exists(get_config_path()):
+    if get_config_path().exists():
         # confirm override.
         confirm_override = input("Config exists. Override? (y): ")
         if confirm_override != "y":
@@ -50,8 +50,9 @@ def configure_application():
         "library-directory": library_directory,
         "workspace-directory": workspace_directory,
     }
-    if not os.path.exists(get_application_root()):
-        os.makedirs(get_application_root())
+    app_root = get_application_root()
+    if not app_root.exists():
+        app_root.mkdir(parents=True, exist_ok=True)
     with open(get_config_path(), 'w', encoding='utf-8') as writer:
         yaml.safe_dump(config, writer)
 

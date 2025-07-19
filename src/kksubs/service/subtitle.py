@@ -1,6 +1,7 @@
 import os
 from typing import List
 from PIL import Image, ImageFont, ImageFilter, ImageEnhance
+import importlib.resources
 
 from kksubs.data.subtitle.style_attributes import *
 from kksubs.data.subtitle.subtitle import Subtitle
@@ -33,6 +34,18 @@ def get_pil_coordinates(image:Image.Image, anchor, grid4, grid10, nudge):
 
     return tb_anchor_x, tb_anchor_y
 
+def _get_default_font():
+    """Get the default font, trying bundled font first, then system default."""
+    try:
+        # Try to get the bundled font from package resources
+        font_files = importlib.resources.files('resources.fonts.roboto')
+        font_path = font_files / 'Roboto-Regular.ttf'
+        with importlib.resources.as_file(font_path) as font_file:
+            return str(font_file)
+    except (ImportError, AttributeError, FileNotFoundError):
+        # If importlib.resources fails, return None for system default
+        return None
+
 def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_directory:str) -> Image.Image:
 
     # expand subtitle.
@@ -49,15 +62,16 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
 
     # extract text data
     if text_data.font == "default":
-        font_style = "arial.ttf"
-    elif os.path.exists(text_data.font):
+        font_style = _get_default_font()
+    elif text_data.font and os.path.exists(text_data.font):
         font_style = text_data.font
     else:
-        logger.error(f"Cannot find font asset {text_data.font}, using default font instead.")
-        font_style = "arial.ttf"
+        logger.warning(f"Cannot find font asset {text_data.font}, skipping text rendering for this subtitle.")
+        font_style = None
     
     # add default text data
-    content[0] = text_data.text+content[0]
+    if text_data.text:
+        content[0] = text_data.text + content[0]
     
     font_color = text_data.color
     font_size = text_data.size
@@ -86,23 +100,26 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
         asset_scale = asset_data.scale
         asset_alpha = asset_data.alpha
         if asset_path is None or not os.path.exists(asset_path):
-            logger.error(f'Asset is None or path {asset_path} does not exist.')
+            logger.warning(f'Asset path {asset_path} does not exist, skipping asset rendering.')
         else:
-            asset = Image.open(asset_path)
-            asset_width, asset_height = asset.size
-            asset_rotate = coalesce(asset_rotate, rotate, 0)
-            asset_scale = coalesce(asset_scale, 1)
-            asset_width, asset_height = int(asset_width*asset_scale), int(asset_height*asset_scale)
-            asset_position = (int(tb_anchor_x-asset_width//2), int(tb_anchor_y-asset_height//2))
-            asset = asset.rotate(
-                asset_rotate
-            ).resize(
-                (asset_width, asset_height)
-            )
-            asset_mask = asset.convert("RGBA")
-            if asset_alpha is not None and asset_alpha < 1:
-                asset_mask = ImageEnhance.Brightness(asset_mask.getchannel('A')).enhance(asset_alpha)
-            image.paste(asset, asset_position, asset_mask)
+            try:
+                asset = Image.open(asset_path)
+                asset_width, asset_height = asset.size
+                asset_rotate = coalesce(asset_rotate, rotate, 0)
+                asset_scale = coalesce(asset_scale, 1)
+                asset_width, asset_height = int(asset_width*asset_scale), int(asset_height*asset_scale)
+                asset_position = (int(tb_anchor_x-asset_width//2), int(tb_anchor_y-asset_height//2))
+                asset = asset.rotate(
+                    asset_rotate
+                ).resize(
+                    (asset_width, asset_height)
+                )
+                asset_mask = asset.convert("RGBA")
+                if asset_alpha is not None and asset_alpha < 1:
+                    asset_mask = ImageEnhance.Brightness(asset_mask.getchannel('A')).enhance(asset_alpha)
+                image.paste(asset, asset_position, asset_mask)
+            except Exception as e:
+                logger.warning(f'Failed to process asset {asset_path}: {e}')
 
     # add background
     background = style.background
@@ -112,9 +129,13 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
             if not os.path.exists(bg_path):
                 bg_path = os.path.join(project_directory, bg_path)
             if not os.path.exists(bg_path):
-                raise FileNotFoundError(f"Image file {bg_path} cannot be found.")
-            bg_image = Image.open(bg_path)
-            image.paste(bg_image, (0, 0), bg_image)
+                logger.warning(f"Background image file {bg_path} cannot be found, skipping background.")
+            else:
+                try:
+                    bg_image = Image.open(bg_path)
+                    image.paste(bg_image, (0, 0), bg_image)
+                except Exception as e:
+                    logger.warning(f'Failed to process background image {bg_path}: {e}')
 
     # apply sub styles
     styles = style.styles
@@ -122,14 +143,23 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
         for sub_style in styles:
             image = add_subtitle_to_image(image, Subtitle(content=[], style=sub_style), project_directory)
 
-    try:
-        font = ImageFont.truetype(font_style, font_size)
-    except OSError:
-        logger.error(f"An error occurred while creating font object, this is probably because the font {font_style} cannot be found. Content will be automatically removed.")
-        content = []
-        font = None
-    
-    text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
+    # Create font object - handle missing fonts gracefully
+    font = None
+    if font_style is not None:
+        try:
+            font = ImageFont.truetype(font_style, font_size)
+        except (OSError, AttributeError, TypeError) as e:
+            logger.warning(f"Failed to create font object from {font_style}: {e}. Skipping text rendering.")
+            font = None
+    else:
+        logger.warning("No valid font available, skipping text rendering.")
+        
+    # Only render text if we have a valid font
+    if font is not None and content:
+        text_layer = create_text_layer(image, font, content, font_color, font_size, font_stroke_color, font_stroke_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
+    else:
+        # Create empty text layer if no font is available
+        text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
 
     # effect processing layer
     mask = style.mask
@@ -140,9 +170,13 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
             if not os.path.exists(mask_path):
                 mask_path = os.path.join(project_directory, mask_path)
             if not os.path.exists(mask_path):
-                raise FileNotFoundError(f"Mask file {mask_path} cannot be found.")
-            mask_image = Image.open(mask_path)
-            has_mask = True
+                logger.warning(f"Mask file {mask_path} cannot be found, skipping mask effects.")
+            else:
+                try:
+                    mask_image = Image.open(mask_path)
+                    has_mask = True
+                except Exception as e:
+                    logger.warning(f'Failed to process mask image {mask_path}: {e}')
 
     brightness = style.brightness
     if brightness is not None:
@@ -173,32 +207,35 @@ def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_director
             else:
                 image = apply_motion_blur(image, kernel_size, angle)
 
-    # outline data application
-    for outline_data in [style.outline_data_1, style.outline_data]:
-        if outline_data is not None and isinstance(outline_data, OutlineData):
-            outline_color = outline_data.color
-            outline_size = outline_data.size
-            outline_blur = outline_data.blur
-            outline_alpha = outline_data.alpha
-            outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
-            outline_base = outline_layer
-            if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
-                outline_base = image.copy()
-                outline_base.paste(outline_layer, (0, 0), outline_layer)
-                outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
-                outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
-                if outline_alpha is not None and outline_alpha < 1:
-                    outline_layer = ImageEnhance.Brightness(outline_layer.getchannel('A')).enhance(outline_alpha)
-                pass
-            # outline_layer.show()
-            image.paste(outline_base, (0, 0), outline_layer)
-            pass
+    # outline data application - only if we have a valid font
+    if font is not None and content:
+        for outline_data in [style.outline_data_1, style.outline_data]:
+            if outline_data is not None and isinstance(outline_data, OutlineData):
+                outline_color = outline_data.color
+                outline_size = outline_data.size
+                outline_blur = outline_data.blur
+                outline_alpha = outline_data.alpha
+                try:
+                    outline_layer = create_text_layer(image, font, content, outline_color, font_size, outline_color, outline_size, align_h, align_v, box_width, tb_anchor_x, tb_anchor_y).rotate(rotate, center=(tb_center_x, tb_center_y))
+                    outline_base = outline_layer
+                    if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
+                        outline_base = image.copy()
+                        outline_base.paste(outline_layer, (0, 0), outline_layer)
+                        outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
+                        outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
+                        if outline_alpha is not None and outline_alpha < 1:
+                            outline_layer = ImageEnhance.Brightness(outline_layer.getchannel('A')).enhance(outline_alpha)
+                    # outline_layer.show()
+                    image.paste(outline_base, (0, 0), outline_layer)
+                except Exception as e:
+                    logger.warning(f'Failed to process outline: {e}')
 
-    text_mask = text_layer
-    if text_data.alpha is not None and text_data.alpha < 1:
-        text_mask = ImageEnhance.Brightness(text_mask.getchannel('A')).enhance(text_data.alpha)
-
-    image.paste(text_layer, (0, 0), text_mask)
+    # Apply text layer
+    if font is not None and content:
+        text_mask = text_layer
+        if text_data.alpha is not None and text_data.alpha < 1:
+            text_mask = ImageEnhance.Brightness(text_mask.getchannel('A')).enhance(text_data.alpha)
+        image.paste(text_layer, (0, 0), text_mask)
     
     return image
 
