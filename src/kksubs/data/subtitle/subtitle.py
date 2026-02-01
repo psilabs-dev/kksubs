@@ -2,9 +2,7 @@ import logging
 import os
 from typing import Dict, List
 
-from kksubs.utils.sanitizers import *
-from kksubs.data.abstract import *
-from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.abstract import RepresentableData
 from kksubs.data.subtitle.style import Style
 
 logger = logging.getLogger(__name__)

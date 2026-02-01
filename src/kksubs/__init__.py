@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from kksubs.controller.subtitle import SubtitleController
 
 # basic functions

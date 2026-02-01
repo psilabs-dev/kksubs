@@ -1,7 +1,8 @@
 import logging
 import os
+import shutil
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 import yaml
 from common.exceptions import InvalidProjectException
 import subprocess
@@ -16,9 +17,8 @@ from kksubs.service.sub_project import SubtitleProjectService
 from kkp.view.project import ProjectView
 from kkp.watcher.project import ProjectWatcher
 from common.utils.coalesce import coalesce
-from common.utils.file import *
-from common.utils.decorators import *
-from common.utils.application import *
+from common.utils.decorators import deprecated, spacing
+from common.utils.application import get_config_path, get_application_root
 from common.exceptions import NotConfiguredException
 
 # config information
@@ -458,7 +458,7 @@ class ProjectController:
             recent_projects = list()
         try:
             self.set_quick_access(projects+recent_projects)
-        except:
+        except Exception:
             raise Exception((projects, recent_projects))
 
         current_project = self.current_project
@@ -651,7 +651,7 @@ class ProjectController:
             print(f'Loading project {project_name}')
             self.sync(compose=compose)
             self.studio_project_service.correct_scene_order()
-            print(f'Checkout successful.')
+            print('Checkout successful.')
             return True
 
     def _create(self, project_name:str, compose:bool=True):
@@ -708,13 +708,13 @@ class ProjectController:
         self.quick_access = project_list
 
     def list_recent_projects(self, limit:Optional[int]=None, start_index:Optional[int]=None, update_quick_access:bool=True) -> List[str]:
-        logger.info(f'Listing recent projects.')
+        logger.info('Listing recent projects.')
         if start_index is None:
             start_index = 0
 
         recent_projects = self.get_recent_projects()
         if not recent_projects:
-            print(f'No recent projects found.')
+            print('No recent projects found.')
             return list()
         num_projects = len(recent_projects)
         
@@ -801,7 +801,7 @@ class ProjectController:
             print(f"Successfully renamed project {self.current_project} to {new_project_id}.")
             return
         else:
-            print(f"Failed to rename project.")
+            print("Failed to rename project.")
 
     def delete(self, project_name:str, safe:bool=True):
         """
@@ -843,18 +843,18 @@ class ProjectController:
 
     def sync(self, compose:bool=True):
         if self.current_project is None:
-            logger.error(f'No assigned project to sync with.')
+            logger.error('No assigned project to sync with.')
             return
         self._sync_studio()
-        logger.info(f'Synced studio.')
+        logger.info('Synced studio.')
         self._sync_workspace()
-        logger.info(f'Synced subtitle project.')
+        logger.info('Synced subtitle project.')
         self._pull_captures()
-        logger.info(f'Retrieved captures.')
+        logger.info('Retrieved captures.')
         if compose:
-            logger.info(f'Applying subtitles...')
+            logger.info('Applying subtitles...')
             self.compose(incremental_update=True)
-            logger.info(f'Applied subtitles.')
+            logger.info('Applied subtitles.')
 
     def save_current_project(self):
         self.sync(compose=True)
@@ -888,7 +888,7 @@ class ProjectController:
         if studio_exe_path is None:
             raise FileNotFoundError("CharaStudio executable not found")
         
-        print(f'Launching Studio; please wait...')
+        print('Launching Studio; please wait...')
         subprocess.Popen(studio_exe_path)
         return
 
@@ -900,7 +900,7 @@ class ProjectController:
         if game_exe_path is None:
             raise FileNotFoundError("Koikatsu Party executable not found")
         
-        print(f'Launching Koikatsu Party; please wait...')
+        print('Launching Koikatsu Party; please wait...')
         subprocess.Popen(game_exe_path)
         return
     
@@ -1004,7 +1004,7 @@ class ProjectController:
         project_names = self.studio_project_service.list_projects(pattern=project_name)
         
         if not project_names:
-            print(f'No projects found.')
+            print('No projects found.')
             return
 
         if len(project_names) == 1:
@@ -1018,7 +1018,7 @@ class ProjectController:
             for p in project_names:
                 print(f'- {p}')
             print('You are about to merge the above projects into your current project. Files of the same name will be overridden.')
-            confirm = input(f'Proceed? (Y) ') == 'Y'
+            confirm = input('Proceed? (Y) ') == 'Y'
 
         if not confirm:
             return

@@ -23,9 +23,9 @@ def command_line():
 
     subparsers = parser.add_subparsers(dest='command')
 
-    init_parser = subparsers.add_parser('init', help='Initialize a project.')
+    subparsers.add_parser('init', help='Initialize a project.')
 
-    rename_parser = subparsers.add_parser('rename', help='Rename images in project.')
+    subparsers.add_parser('rename', help='Rename images in project.')
 
     activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
 

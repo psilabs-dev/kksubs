@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List, Dict, Union
 
-from kksubs.data.subtitle.style import *
+from kksubs.data.subtitle.style import ContextLayer, Layer, Style, StyleMatrix, StyleRow
 from kksubs.data.subtitle.style_row_enum import STYLE_ROW_ENUM
 
 logger = logging.getLogger(__name__)

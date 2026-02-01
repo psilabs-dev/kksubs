@@ -39,7 +39,7 @@ def create_text_layer(
 
     text_dimensions = [_get_text_dimensions(line, font, default_text_width=default_text_width, default_text_height=default_text_height) for line in wrapped_text]
     text_widths = list(map(lambda dim:dim[0], text_dimensions))
-    max_text_width = max(text_widths)
+    max(text_widths)
     num_lines = len(wrapped_text)
     sum_text_height = num_lines * default_text_height
 

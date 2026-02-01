@@ -30,9 +30,9 @@ def command_line():
     compose_parser = subparsers.add_parser('compose', help='Compose subtitles once.')
     compose_parser.add_argument('--incremental-update', action='store_true', help='Allow incremental update.')
 
-    activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
+    subparsers.add_parser('activate', help='Compose subtitles continuously.')
 
-    clear_parser = subparsers.add_parser('clear', help='Clear subtitle outputs.')
+    subparsers.add_parser('clear', help='Clear subtitle outputs.')
 
     create_parser = subparsers.add_parser('create', help='Create a project.')
     create_parser.add_argument('project_name', type=str, help='Name of project to create.')
@@ -47,13 +47,13 @@ def command_line():
     delete_parser = subparsers.add_parser('delete', help='Delete a project or multiple projects')
     delete_parser.add_argument('project_name', type=str, help='Name of project to delete.')
 
-    sync_parser = subparsers.add_parser('sync', help='Sync current project with library.')
+    subparsers.add_parser('sync', help='Sync current project with library.')
 
-    studio_parser = subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
+    subparsers.add_parser('studio', help='Open Koikatsu Charastudio application.')
 
-    library_parser = subparsers.add_parser('library', help='Open library folder.')
+    subparsers.add_parser('library', help='Open library folder.')
 
-    game_parser = subparsers.add_parser('game', help='Open Koikatsu game application.')
+    subparsers.add_parser('game', help='Open Koikatsu game application.')
 
     game_folder_parser = subparsers.add_parser('game-folder', help='Open Koikatsu Party game folder.')
     game_folder_parser.add_argument('-s', '--shortcut', type=str, help='Shortcut to open a subfolder.')

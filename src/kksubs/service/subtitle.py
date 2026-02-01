@@ -3,7 +3,8 @@ from typing import List
 from PIL import Image, ImageFont, ImageFilter, ImageEnhance
 import importlib.resources
 
-from kksubs.data.subtitle.style_attributes import *
+from common.utils.coalesce import coalesce
+from kksubs.data.subtitle.style_attributes import OutlineData
 from kksubs.data.subtitle.subtitle import Subtitle
 # from kksubs.data.subtitle.subtitle import OutlineData, Subtitle
 from kksubs.service.processor.motion_blur import apply_motion_blur

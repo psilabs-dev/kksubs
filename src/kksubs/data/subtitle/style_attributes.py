@@ -1,6 +1,6 @@
-from kksubs.data.abstract import *
-from common.utils.coalesce import *
-from kksubs.utils.sanitizers import *
+from kksubs.data.abstract import BaseData
+from common.utils.coalesce import coalesce
+from kksubs.utils.sanitizers import to_float, to_integer, to_rgb_color, to_string, to_validated_value, to_xy_coords
 
 class TextData(BaseData):
     field_name = "text_data"

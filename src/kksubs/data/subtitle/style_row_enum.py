@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import List
 
-from kksubs.data.subtitle.style import *
+from kksubs.data.subtitle.style import Style, StyleRow
+from kksubs.data.subtitle.style_attributes import BoxData
 
 grid4_complete:List[Style] = list()
 for i in range(4):

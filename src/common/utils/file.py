@@ -241,7 +241,7 @@ def _sync_unidirectional(source, destination, filename_filter:List[str]=None):
         
         in_both = source_paths.intersection(dest_paths) # conflict resolution. (see modified/unmodified)
         modified = set(filter(lambda path: source_bucket.files[path] > dest_bucket.files[path], in_both))
-        unmodified = in_both.difference(modified)
+        in_both.difference(modified)
         delete_from_dest = dest_paths.difference(source_paths)
         add_to_dest = source_paths.difference(dest_paths)
 
@@ -343,7 +343,7 @@ def _get_bidirectional_deltas(
         deleted,
     ]))
 
-    total_num_files = total_changes + len(unmodified)
+    total_changes + len(unmodified)
 
     return SyncDeltas(
         unmodified=unmodified,

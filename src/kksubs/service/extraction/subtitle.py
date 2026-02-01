@@ -2,7 +2,10 @@ import logging
 from typing import Dict, List, Set
 from copy import deepcopy
 
-from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.subtitle.style_attributes import (
+    Asset, Background, BaseData, BoxData, Brightness, Gaussian,
+    Mask, Motion, OutlineData, OutlineData1, TextData
+)
 from kksubs.data.subtitle.style import Style
 from kksubs.data.subtitle.subtitle import Subtitle, SubtitleGroup
 # from kksubs.data.subtitle.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, SubtitleGroup, TextData
@@ -163,7 +166,7 @@ def extract_subtitle_groups(
         draft_id:str, draft_body:str, styles:Dict[str, Style], image_dir:str, output_dir:str, prefix:str=None
 ) -> Dict[str, List[SubtitleGroup]]:
     # extract subtitle groups from draft
-    logger.info(f"Extracting subtitle groups.")
+    logger.info("Extracting subtitle groups.")
 
     # subtitles = dict()
     subtitle_groups_by_image_id:Dict[str, List[SubtitleGroup]] = dict()

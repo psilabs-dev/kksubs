@@ -2,7 +2,12 @@ from abc import ABC
 from copy import deepcopy
 from typing import List
 
-from kksubs.data.subtitle.style_attributes import *
+from common.data.representable import RepresentableData
+from common.utils.coalesce import coalesce
+from kksubs.data.subtitle.style_attributes import (
+    Asset, Background, BaseData, BoxData, Brightness, Gaussian,
+    Mask, Motion, OutlineData, OutlineData1, TextData
+)
 
 class Style(BaseData):
     field_name = "style"
