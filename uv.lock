@@ -152,13 +152,13 @@ dependencies = [
     { name = "packaging" },
     { name = "pillow" },
     { name = "pyyaml" },
-    { name = "ruff" },
 ]
 
 [package.optional-dependencies]
-test = [
+dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -168,12 +168,12 @@ requires-dist = [
     { name = "opencv-python" },
     { name = "packaging" },
     { name = "pillow" },
-    { name = "pytest", marker = "extra == 'test'" },
-    { name = "pytest-cov", marker = "extra == 'test'" },
+    { name = "pytest", marker = "extra == 'dev'" },
+    { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pyyaml" },
-    { name = "ruff", specifier = ">=0.14.14" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.14" },
 ]
-provides-extras = ["test"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "natsort"
