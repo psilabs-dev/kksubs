@@ -5,16 +5,16 @@ from typing import List
 from common.data.representable import RepresentableData
 from common.utils.coalesce import coalesce
 from kksubs.data.subtitle.style_attributes import (
-    Asset, Background, BaseData, BoxData, Brightness, Gaussian,
-    Mask, Motion, OutlineData, OutlineData1, TextData
+    Asset, Background, BaseData, BoxData, Brightness, CharacterDialogueConfig,
+    Gaussian, Mask, Motion, OutlineData, OutlineData1, TextData
 )
 
 class Style(BaseData):
     field_name = "style"
 
     def __init__(
-            self, 
-            style_id:str=None, 
+            self,
+            style_id:str=None,
             text_data:TextData=None,
             outline_data:OutlineData=None,
             outline_data_1:OutlineData1=None,
@@ -25,6 +25,7 @@ class Style(BaseData):
             motion:Motion=None,
             background:Background=None,
             mask:Mask=None,
+            character_dialogue:CharacterDialogueConfig=None,
             styles:List["Style"]=None,
     ):
         if text_data is None:
@@ -43,6 +44,7 @@ class Style(BaseData):
         self.motion = motion
         self.background = background
         self.mask = mask
+        self.character_dialogue = character_dialogue
         self.styles = styles
         pass
 
@@ -74,6 +76,7 @@ class Style(BaseData):
             motion=Motion.deserialize(values=style_dict.get(Motion.field_name)),
             background=Background.deserialize(path=style_dict.get(Background.field_name)),
             mask=Background.deserialize(path=style_dict.get(Mask.field_name)),
+            character_dialogue=CharacterDialogueConfig.deserialize(data=style_dict.get(CharacterDialogueConfig.field_name)),
             styles=styles,
         )
     
@@ -124,6 +127,10 @@ class Style(BaseData):
             self.mask = other.mask
         else:
             self.mask.coalesce(other.mask)
+        if self.character_dialogue is None:
+            self.character_dialogue = other.character_dialogue
+        else:
+            self.character_dialogue.coalesce(other.character_dialogue)
         if not self.styles:
             self.styles = other.styles
 
@@ -158,6 +165,9 @@ class Style(BaseData):
         if self.mask is not None:
             self.mask.coalesce(Mask.get_default())
             self.mask.correct_values()
+        if self.character_dialogue is not None:
+            self.character_dialogue.coalesce(CharacterDialogueConfig.get_default())
+            self.character_dialogue.correct_values()
         if self.styles is not None:
             for style in self.styles:
                 style.correct_values()

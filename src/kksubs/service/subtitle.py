@@ -5,7 +5,7 @@ import importlib.resources
 
 from common.utils.coalesce import coalesce
 from kksubs.data.subtitle.style_attributes import OutlineData
-from kksubs.data.subtitle.subtitle import Subtitle
+from kksubs.data.subtitle.subtitle import CharacterDialogueSubtitle, Subtitle
 # from kksubs.data.subtitle.subtitle import OutlineData, Subtitle
 from kksubs.service.processor.motion_blur import apply_motion_blur
 from kksubs.service.processor.apply_text import create_text_layer
@@ -47,7 +47,220 @@ def _get_default_font():
         # If importlib.resources fails, return None for system default
         return None
 
+def _render_text_with_outlines(
+    image: Image.Image,
+    content: List[str],
+    style,
+    font: ImageFont.FreeTypeFont,
+    tb_anchor_x: float,
+    tb_anchor_y: float,
+    tb_center_x: float,
+    tb_center_y: float,
+) -> Image.Image:
+    """
+    Helper to render text with outline layers (outline_data_1, outline_data).
+    Returns a layer with text and outlines composited.
+    """
+    text_data = style.text_data
+    box_data = style.box_data
+
+    font_color = text_data.color
+    font_size = text_data.size
+    font_stroke_size = text_data.stroke_size
+    font_stroke_color = text_data.stroke_color
+    align_h = box_data.align_h
+    align_v = box_data.align_v
+    box_width = box_data.box_width
+    rotate = box_data.rotate if box_data.rotate is not None else 0
+
+    # Create base layer
+    layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
+
+    # Create text layer
+    text_layer = create_text_layer(
+        layer, font, content, font_color, font_size,
+        font_stroke_color, font_stroke_size, align_h, align_v,
+        box_width, tb_anchor_x, tb_anchor_y
+    ).rotate(rotate, center=(tb_center_x, tb_center_y))
+
+    # Apply outline layers
+    for outline_data in [style.outline_data_1, style.outline_data]:
+        if outline_data is not None and isinstance(outline_data, OutlineData):
+            outline_color = outline_data.color
+            outline_size = outline_data.size
+            outline_blur = outline_data.blur
+            outline_alpha = outline_data.alpha
+            try:
+                outline_layer = create_text_layer(
+                    layer, font, content, outline_color, font_size,
+                    outline_color, outline_size, align_h, align_v,
+                    box_width, tb_anchor_x, tb_anchor_y
+                ).rotate(rotate, center=(tb_center_x, tb_center_y))
+                outline_base = outline_layer
+                if outline_blur is not None and isinstance(outline_blur, int) and outline_blur > 0:
+                    outline_base = layer.copy()
+                    outline_base.paste(outline_layer, (0, 0), outline_layer)
+                    outline_base = outline_base.filter(ImageFilter.GaussianBlur(radius=outline_blur))
+                    outline_layer = outline_layer.filter(ImageFilter.GaussianBlur(radius=outline_blur)).convert("RGBA")
+                    if outline_alpha is not None and outline_alpha < 1:
+                        outline_layer = ImageEnhance.Brightness(outline_layer.getchannel('A')).enhance(outline_alpha)
+                layer.paste(outline_base, (0, 0), outline_layer)
+            except Exception as e:
+                logger.warning(f'Failed to process outline: {e}')
+
+    # Apply text layer
+    text_mask = text_layer
+    if text_data.alpha is not None and text_data.alpha < 1:
+        text_mask = ImageEnhance.Brightness(text_mask.getchannel('A')).enhance(text_data.alpha)
+    layer.paste(text_layer, (0, 0), text_mask)
+
+    return layer
+
+def _render_character_dialogue_subtitle(
+    image: Image.Image,
+    subtitle: CharacterDialogueSubtitle,
+    project_directory: str
+) -> Image.Image:
+    """
+    Render character/dialogue subtitle as horizontally-arranged container.
+
+    Character and dialogue are rendered as separate elements with independent
+    styling, then positioned as a single container unit.
+    """
+    style = subtitle.style
+    config = style.character_dialogue
+
+    if config is None or not config.enabled:
+        logger.warning("CharacterDialogueSubtitle has no valid character_dialogue config, rendering as empty.")
+        return image
+
+    # Get character name and dialogue
+    char_text = config.character_name
+    separator_text = config.separator if config.separator is not None else ": "
+    spacing = config.spacing if config.spacing is not None else 0
+    dialogue_lines = subtitle.dialogue_content if subtitle.dialogue_content else [""]
+
+    # Get default styles if not provided
+    char_style = config.character if config.character is not None else style
+    dialogue_style = config.dialogue if config.dialogue is not None else style
+
+    # Ensure styles have defaults coalesced
+    if char_style.box_data.box_width is None:
+        from kksubs.data.subtitle.style_attributes import BoxData
+        char_style.box_data.coalesce(BoxData.get_default())
+    if dialogue_style.box_data.box_width is None:
+        from kksubs.data.subtitle.style_attributes import BoxData
+        dialogue_style.box_data.coalesce(BoxData.get_default())
+
+    # Get character font
+    char_text_data = char_style.text_data
+    if char_text_data.font == "default":
+        char_font_path = _get_default_font()
+    elif char_text_data.font and os.path.exists(char_text_data.font):
+        char_font_path = char_text_data.font
+    else:
+        logger.warning(f"Cannot find character font {char_text_data.font}, using default.")
+        char_font_path = _get_default_font()
+
+    try:
+        char_font = ImageFont.truetype(char_font_path, char_text_data.size)
+    except Exception as e:
+        logger.warning(f"Failed to load character font: {e}")
+        return image
+
+    # Get dialogue font
+    dialogue_text_data = dialogue_style.text_data
+    if dialogue_text_data.font == "default":
+        dialogue_font_path = _get_default_font()
+    elif dialogue_text_data.font and os.path.exists(dialogue_text_data.font):
+        dialogue_font_path = dialogue_text_data.font
+    else:
+        logger.warning(f"Cannot find dialogue font {dialogue_text_data.font}, using default.")
+        dialogue_font_path = _get_default_font()
+
+    try:
+        dialogue_font = ImageFont.truetype(dialogue_font_path, dialogue_text_data.size)
+    except Exception as e:
+        logger.warning(f"Failed to load dialogue font: {e}")
+        return image
+
+    # Calculate text dimensions
+    char_bbox = char_font.getbbox(char_text)
+    char_width = char_bbox[2] - char_bbox[0]
+    char_height = char_bbox[3] - char_bbox[1]
+
+    sep_bbox = char_font.getbbox(separator_text)
+    sep_width = sep_bbox[2] - sep_bbox[0]
+    sep_height = sep_bbox[3] - sep_bbox[1]
+
+    # Calculate dialogue dimensions
+    dialogue_text = "\n".join(dialogue_lines)
+    dialogue_bbox = dialogue_font.getbbox(dialogue_text)
+    dialogue_width = dialogue_bbox[2] - dialogue_bbox[0]
+    dialogue_height = dialogue_bbox[3] - dialogue_bbox[1]
+
+    # Calculate container dimensions (horizontal layout)
+    container_width = char_width + sep_width + spacing + dialogue_width
+    container_height = max(char_height, sep_height, dialogue_height)
+
+    # Get container anchor point
+    box_data = style.box_data
+    tb_center_x, tb_center_y = get_pil_coordinates(
+        image, anchor=box_data.anchor, grid4=box_data.grid4,
+        grid10=box_data.grid10, nudge=None
+    )
+    tb_anchor_x, tb_anchor_y = get_pil_coordinates(
+        image, anchor=box_data.anchor, grid4=box_data.grid4,
+        grid10=box_data.grid10, nudge=box_data.nudge
+    )
+
+    # Calculate container top-left based on alignment
+    if box_data.align_h == "center":
+        container_x = tb_anchor_x - container_width / 2
+    elif box_data.align_h == "left":
+        container_x = tb_anchor_x
+    else:  # right
+        container_x = tb_anchor_x - container_width
+
+    if box_data.align_v == "center":
+        container_y = tb_anchor_y - container_height / 2
+    elif box_data.align_v == "top":
+        container_y = tb_anchor_y
+    else:  # bottom
+        container_y = tb_anchor_y - container_height
+
+    # Render character portion
+    char_layer = _render_text_with_outlines(
+        image, [char_text], char_style, char_font,
+        container_x, container_y, tb_center_x, tb_center_y
+    )
+
+    # Render separator portion (uses character style)
+    sep_layer = _render_text_with_outlines(
+        image, [separator_text], char_style, char_font,
+        container_x + char_width, container_y, tb_center_x, tb_center_y
+    )
+
+    # Render dialogue portion
+    dialogue_layer = _render_text_with_outlines(
+        image, dialogue_lines, dialogue_style, dialogue_font,
+        container_x + char_width + sep_width + spacing, container_y,
+        tb_center_x, tb_center_y
+    )
+
+    # Composite all layers
+    image = image.convert("RGBA")
+    image = Image.alpha_composite(image, char_layer)
+    image = Image.alpha_composite(image, sep_layer)
+    image = Image.alpha_composite(image, dialogue_layer)
+
+    return image
+
 def add_subtitle_to_image(image:Image.Image, subtitle:Subtitle, project_directory:str) -> Image.Image:
+
+    # Check if this is a character/dialogue subtitle
+    if isinstance(subtitle, CharacterDialogueSubtitle):
+        return _render_character_dialogue_subtitle(image, subtitle, project_directory)
 
     # expand subtitle.
     style = subtitle.style

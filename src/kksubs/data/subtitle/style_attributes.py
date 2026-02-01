@@ -354,13 +354,13 @@ class Background(BaseData):
     def get_default(cls):
         return Background(
         )
-    
+
     @classmethod
     def deserialize(cls, path=None):
         if path is None:
             return None
         return Background(**path)
-    
+
     def coalesce(self, other:"Background"):
         if other is None:
             return
@@ -368,5 +368,105 @@ class Background(BaseData):
 
     def correct_values(self):
         return
+
+    pass
+
+class CharacterDialogueConfig(BaseData):
+    field_name = "character_dialogue"
+
+    def __init__(
+            self,
+            enabled=None,
+            character_name=None,
+            separator=None,
+            spacing=None,
+            character=None,
+            dialogue=None,
+    ):
+        self.enabled = enabled
+        self.character_name = character_name
+        self.separator = separator
+        self.spacing = spacing
+        self.character = character
+        self.dialogue = dialogue
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return CharacterDialogueConfig(
+            enabled=False,
+            character_name="",
+            separator=": ",
+            spacing=0,
+            character=None,
+            dialogue=None,
+        )
+
+    @classmethod
+    def deserialize(cls, data=None):
+        if data is None:
+            return None
+
+        from kksubs.data.subtitle.style import Style
+
+        enabled = data.get('enabled', False)
+        character_name = data.get('character_name', "")
+        separator = data.get('separator', ": ")
+        spacing = data.get('spacing', 0)
+
+        character_data = data.get('character')
+        dialogue_data = data.get('dialogue')
+
+        character = Style.deserialize(character_data) if character_data is not None else None
+        dialogue = Style.deserialize(dialogue_data) if dialogue_data is not None else None
+
+        return CharacterDialogueConfig(
+            enabled=enabled,
+            character_name=character_name,
+            separator=separator,
+            spacing=spacing,
+            character=character,
+            dialogue=dialogue,
+        )
+
+    def coalesce(self, other:"CharacterDialogueConfig"):
+        if other is None:
+            return
+
+        self.enabled = coalesce(self.enabled, other.enabled)
+        self.character_name = coalesce(self.character_name, other.character_name)
+        self.separator = coalesce(self.separator, other.separator)
+        self.spacing = coalesce(self.spacing, other.spacing)
+
+        if self.character is None:
+            self.character = other.character
+        elif other.character is not None:
+            self.character.coalesce(other.character)
+
+        if self.dialogue is None:
+            self.dialogue = other.dialogue
+        elif other.dialogue is not None:
+            self.dialogue.coalesce(other.dialogue)
+
+    def correct_values(self):
+        if self.enabled is not None:
+            assert isinstance(self.enabled, bool)
+
+        if self.character_name is not None:
+            self.character_name = to_string(self.character_name)
+
+        if self.separator is not None:
+            self.separator = to_string(self.separator)
+
+        self.spacing = to_integer(self.spacing)
+
+        if self.enabled and not self.character_name:
+            raise ValueError("character_name is required when character_dialogue is enabled")
+
+        if self.character is not None:
+            self.character.correct_values()
+
+        if self.dialogue is not None:
+            self.dialogue.correct_values()
 
     pass
