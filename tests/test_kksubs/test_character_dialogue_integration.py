@@ -206,7 +206,7 @@ buggy_style: Text content
         input_image = Image.open(os.path.join(image_dir, 'bug_repro.png'))
         
         # Simple check: different content
-        assert list(output_image.getdata()) != list(input_image.getdata()), "Output image is identical to input, implying render failure."
+        assert output_image.tobytes() != input_image.tobytes(), "Output image is identical to input, implying render failure."
         
         output_image.close()
         input_image.close()
