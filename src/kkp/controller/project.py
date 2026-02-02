@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+import platform
 from pathlib import Path
 from typing import Dict, List, Optional
 import yaml
@@ -8,6 +9,7 @@ from common.exceptions import InvalidProjectException
 import subprocess
 from packaging import version
 
+from common.utils.file import open_directory
 from common.import_utils import get_kksubs_version
 from kkp.data.config import KKPSettings
 from kksubs.service.file import FileService
@@ -506,7 +508,6 @@ class ProjectController:
         
         userdata_path = os.path.join(self.game_directory, 'UserData')
         if os.path.exists(userdata_path):
-            import shutil
             logger.info(f"Cleaning up UserData directory: {userdata_path}")
             shutil.rmtree(userdata_path)
             logger.info("UserData directory cleaned up successfully")
@@ -861,7 +862,6 @@ class ProjectController:
 
     def _find_executable(self, base_name: str) -> Optional[str]:
         """Find executable with cross-platform support."""
-        import platform
         
         if self.game_directory is None:
             return None
@@ -909,7 +909,6 @@ class ProjectController:
             raise ValueError("Library is None")
         if not self.library.exists():
             raise FileNotFoundError(self.library)
-        from common.utils.file import open_directory
         open_directory(self.library)
     
     def open_output_folders(self, drafts:Optional[str]=None):
@@ -917,7 +916,6 @@ class ProjectController:
         Open the subtitled output images in file explorer.
         """
         output_dir = self.get_output_directory()
-        from common.utils.file import open_directory
         
         if drafts is not None and not drafts:
             for draft in drafts:
@@ -975,7 +973,6 @@ class ProjectController:
         print(f'Finished exporting {len(projects)} projects.')
 
         if show_destination:
-            from common.utils.file import open_directory
             open_directory(destination)
 
     def _merge_project(self, project_name:str):

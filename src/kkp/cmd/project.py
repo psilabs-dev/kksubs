@@ -1,5 +1,6 @@
 import argparse
 import logging
+from common.import_utils import get_kksubs_version
 
 from kkp.controller.project import ProjectController
 
@@ -79,7 +80,6 @@ def command_line():
 
     get_version = args.version
     if get_version:
-        from common.import_utils import get_kksubs_version
         print(f'kksubs version {get_kksubs_version()}')
         return
 

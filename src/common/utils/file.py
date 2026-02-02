@@ -27,7 +27,6 @@ def open_directory(path):
         FileNotFoundError: If the directory doesn't exist
         OSError: If the directory cannot be opened
     """
-    from pathlib import Path
     
     # Convert to Path object for consistency
     path = Path(path)

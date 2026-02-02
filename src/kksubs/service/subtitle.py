@@ -6,6 +6,7 @@ import importlib.resources
 from common.utils.coalesce import coalesce
 from kksubs.data.subtitle.style_attributes import OutlineData
 from kksubs.data.subtitle.subtitle import CharacterDialogueSubtitle, Subtitle
+from kksubs.data.subtitle.style import Style
 # from kksubs.data.subtitle.subtitle import OutlineData, Subtitle
 from kksubs.service.processor.motion_blur import apply_motion_blur
 from kksubs.service.processor.apply_text import create_text_layer
@@ -145,7 +146,6 @@ def _render_character_dialogue_subtitle(
     dialogue_style = config.dialogue if config.dialogue is not None else style
 
     # Ensure styles have defaults coalesced
-    from kksubs.data.subtitle.style import Style
     char_style.coalesce(Style.get_default())
     dialogue_style.coalesce(Style.get_default())
 

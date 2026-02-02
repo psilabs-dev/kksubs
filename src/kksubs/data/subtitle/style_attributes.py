@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import kksubs.data.subtitle.style
 from kksubs.data.abstract import BaseData
 from common.utils.coalesce import coalesce
 from kksubs.utils.sanitizers import to_float, to_integer, to_rgb_color, to_string, to_validated_value, to_xy_coords
@@ -413,8 +414,6 @@ class CharacterDialogueConfig(BaseData):
         if data is None:
             return None
 
-        from kksubs.data.subtitle.style import Style
-
         enabled = data.get('enabled', False)
         character_name = data.get('character_name', "")
         separator = data.get('separator', ": ")
@@ -423,8 +422,8 @@ class CharacterDialogueConfig(BaseData):
         character_data = data.get('character')
         dialogue_data = data.get('dialogue')
 
-        character = Style.deserialize(character_data) if character_data is not None else None
-        dialogue = Style.deserialize(dialogue_data) if dialogue_data is not None else None
+        character = kksubs.data.subtitle.style.Style.deserialize(character_data) if character_data is not None else None
+        dialogue = kksubs.data.subtitle.style.Style.deserialize(dialogue_data) if dialogue_data is not None else None
 
         return CharacterDialogueConfig(
             enabled=enabled,
