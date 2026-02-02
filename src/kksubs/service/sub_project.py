@@ -13,7 +13,7 @@ import pickle
 
 from kksubs.data.subtitle.style import Style
 from kksubs.data.subtitle.subtitle import SubtitleGroup
-from common.exceptions import *
+from common.exceptions import InvalidProjectException, RetryWatcherPrompt
 
 from kksubs.service.extraction.subtitle import extract_subtitle_groups
 from kksubs.service.extraction.style import extract_styles
@@ -286,10 +286,10 @@ Original error message: {traceback.format_exc()}
         # state_path_v2 = self.get_state_path_v2(draft_name)
 
         if not os.path.exists(self.metadata_directory):
-            logger.info(f"Creating additional data directory.")
+            logger.info("Creating additional data directory.")
             os.mkdir(self.metadata_directory)
         if not os.path.exists(self.state_directory):
-            logger.info(f"Creating states directory.")
+            logger.info("Creating states directory.")
             os.mkdir(self.state_directory)
 
         if not os.path.exists(state_path):
@@ -320,7 +320,7 @@ Original error message: {traceback.format_exc()}
         d4 = prev_image_ids.intersection(out_image_ids).difference(curr_image_ids) # delete output image.
 
         d5 = curr_image_ids.difference(prev_image_ids).difference(out_image_ids) # add subtitle.
-        d6 = prev_image_ids.difference(curr_image_ids).difference(out_image_ids) # do nothing.
+        prev_image_ids.difference(curr_image_ids).difference(out_image_ids) # do nothing.
         d7 = out_image_ids.difference(curr_image_ids).difference(prev_image_ids) # delete output image.
 
         # print(d1, d2, d3, d4, d5, d6, d7)

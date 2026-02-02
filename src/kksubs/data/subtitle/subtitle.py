@@ -2,9 +2,7 @@ import logging
 import os
 from typing import Dict, List
 
-from kksubs.utils.sanitizers import *
-from kksubs.data.abstract import *
-from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.abstract import RepresentableData
 from kksubs.data.subtitle.style import Style
 
 logger = logging.getLogger(__name__)
@@ -23,8 +21,26 @@ class Subtitle(RepresentableData):
     def deserialize(self, subtitle_data:Dict) -> "Subtitle":
         if subtitle_data is None:
             return None
-        
+
         return Subtitle(content=subtitle_data.get('content'), style=Style.deserialize(subtitle_data.get('style')))
+
+class CharacterDialogueSubtitle(Subtitle):
+
+    def __init__(self, dialogue_content:List[str]=None, style:Style=None):
+        super().__init__(content=[], style=style)
+        if dialogue_content is None:
+            dialogue_content = []
+        self.dialogue_content = dialogue_content
+
+    @classmethod
+    def deserialize(self, subtitle_data:Dict) -> "CharacterDialogueSubtitle":
+        if subtitle_data is None:
+            return None
+
+        return CharacterDialogueSubtitle(
+            dialogue_content=subtitle_data.get('dialogue_content'),
+            style=Style.deserialize(subtitle_data.get('style'))
+        )
 
 class SubtitleGroup(RepresentableData):
 

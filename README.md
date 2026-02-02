@@ -9,8 +9,7 @@
 ![processed-image](demo.png)
 
 ## Installation and Setup
-The program ~~is~~ *was* intended to work on a Windows OS with Python versions 3.10-3.12.
-However, I can only test this on Ubuntu now.
+The program is intended to work on a Windows OS with Python 3.10 or later.
 
 Open a Python virtual environment and install the Git repository. For example:
 ```console
@@ -20,4 +19,4 @@ Configure the application:
 ```console
 $ koi configure
 ```
-Command line reference ([koi](docs\command_line\koi.md)).
+Command line reference ([koi](docs/command_line/koi.md)).

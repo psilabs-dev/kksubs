@@ -1,5 +1,6 @@
 import argparse
 import logging
+from common.import_utils import get_kksubs_version
 
 from kksubs.controller.subtitle import SubtitleController
 
@@ -23,9 +24,9 @@ def command_line():
 
     subparsers = parser.add_subparsers(dest='command')
 
-    init_parser = subparsers.add_parser('init', help='Initialize a project.')
+    subparsers.add_parser('init', help='Initialize a project.')
 
-    rename_parser = subparsers.add_parser('rename', help='Rename images in project.')
+    subparsers.add_parser('rename', help='Rename images in project.')
 
     activate_parser = subparsers.add_parser('activate', help='Compose subtitles continuously.')
 
@@ -61,7 +62,6 @@ def command_line():
 
     get_version:bool = args.version
     if get_version:
-        from common.import_utils import get_kksubs_version
         print(f'kksubs version {get_kksubs_version()}')
         return
 

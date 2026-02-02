@@ -1,6 +1,5 @@
 import os
 from typing import Dict, List, Union
-import yaml
 from common.data.file import Bucket
 
 from common.utils.file import transfer, sync_bidirectional, sync_unidirectional, save_most_recent_path

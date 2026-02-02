@@ -2,9 +2,12 @@ import logging
 from typing import Dict, List, Set
 from copy import deepcopy
 
-from kksubs.data.subtitle.style_attributes import *
+from kksubs.data.subtitle.style_attributes import (
+    Asset, Background, BaseData, BoxData, Brightness, CharacterDialogueConfig,
+    Gaussian, Mask, Motion, OutlineData, OutlineData1, TextData
+)
 from kksubs.data.subtitle.style import Style
-from kksubs.data.subtitle.subtitle import Subtitle, SubtitleGroup
+from kksubs.data.subtitle.subtitle import CharacterDialogueSubtitle, Subtitle, SubtitleGroup
 # from kksubs.data.subtitle.subtitle import Background, BaseData, BoxData, Brightness, Gaussian, Mask, Motion, OutlineData, OutlineData1, Style, Subtitle, SubtitleGroup, TextData
 
 # parsing/extraction, filtering, standardization
@@ -12,19 +15,29 @@ logger = logging.getLogger(__name__)
 
 default_style_by_field_name:Dict[str, BaseData] = {
     base_data.field_name:base_data for base_data in [
-        TextData, 
-        OutlineData, 
-        OutlineData1, 
-        BoxData, 
+        TextData,
+        OutlineData,
+        OutlineData1,
+        BoxData,
         Asset,
-        Brightness, 
-        Gaussian, 
-        Motion, 
-        Background, 
+        Brightness,
+        Gaussian,
+        Motion,
+        Background,
         Mask,
+        CharacterDialogueConfig,
         Style
     ]
 }
+
+def _is_character_dialogue_style(style_id: str, styles: Dict[str, Style]) -> bool:
+    """Check if a style has character_dialogue enabled."""
+    style = styles.get(style_id)
+    return (
+        style is not None
+        and style.character_dialogue is not None
+        and style.character_dialogue.enabled
+    )
 
 def _is_valid_nested_attribute(style:BaseData, nested_attribute:str) -> bool:
     attributes = nested_attribute.split(".")
@@ -120,6 +133,19 @@ def _extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], s
                     key, line_content = lsplit
                     if key == "content":
                         pass
+                    elif _is_character_dialogue_style(key, styles):
+                        # Character/dialogue subtitle
+                        if is_start_of_subtitle:
+                            # Create CharacterDialogueSubtitle instead of regular Subtitle
+                            style = deepcopy(styles.get(key))
+                            dialogue_content = []
+                            subtitle = CharacterDialogueSubtitle(dialogue_content=dialogue_content, style=style)
+                            # Replace the last subtitle that was just created
+                            subtitles[-1] = subtitle
+                        # Append dialogue content
+                        if line_content.lstrip():
+                            subtitle.dialogue_content.append(line_content.lstrip())
+                        continue
                     else: # apply alias as style.
                         # deep copy to enforce independence between subtitle objects, esp. for child styles.
                         style.coalesce(deepcopy(styles.get(key)))
@@ -129,6 +155,11 @@ def _extract_subtitles_from_image_block(textstring:str, content_keys:Set[str], s
                 line_content = lsplit[1].lstrip() if len(lsplit) == 2 else ""
             else:
                 line_content = line
+                # If we're in a character/dialogue subtitle, append to dialogue_content
+                if isinstance(subtitle, CharacterDialogueSubtitle):
+                    if line_content.strip():
+                        subtitle.dialogue_content.append(line_content)
+                    continue
             if not line_content:
                 empty_lines.append(line_content)
             else:
@@ -163,7 +194,7 @@ def extract_subtitle_groups(
         draft_id:str, draft_body:str, styles:Dict[str, Style], image_dir:str, output_dir:str, prefix:str=None
 ) -> Dict[str, List[SubtitleGroup]]:
     # extract subtitle groups from draft
-    logger.info(f"Extracting subtitle groups.")
+    logger.info("Extracting subtitle groups.")
 
     # subtitles = dict()
     subtitle_groups_by_image_id:Dict[str, List[SubtitleGroup]] = dict()

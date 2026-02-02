@@ -1,9 +1,9 @@
 from typing import Type
 
 from common.data.representable import RepresentableData
-from kksubs.data.subtitle.style_attributes import *
-from kksubs.data.subtitle.style import *
-from kksubs.data.subtitle.subtitle import *
+from kksubs.data.subtitle.style_attributes import Asset, Background, BoxData, Brightness, Gaussian, Motion, OutlineData, TextData
+from kksubs.data.subtitle.style import Style
+from kksubs.data.subtitle.subtitle import Subtitle, SubtitleGroup
 
 
 def assert_representations_equal(representable_data: RepresentableData, representation_class: Type[RepresentableData]):

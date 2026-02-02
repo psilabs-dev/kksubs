@@ -2,6 +2,7 @@ import os
 from kksubs.service.sub_project import SubtitleProjectService
 from typing import Dict, List
 import logging
+from common.utils.file import open_directory
 
 from kksubs.watcher.subtitle import SubtitleWatcher
 
@@ -71,7 +72,6 @@ class SubtitleController:
     def open_output_folders(self, drafts:str=None):
         # open the folder containing subtitled images corresponding to given draft.
         # if draft is not given, opens every folder in the outputs folder.
-        from common.utils.file import open_directory
         
         output_dir = self.get_output_directory()
         if drafts is not None and not drafts:

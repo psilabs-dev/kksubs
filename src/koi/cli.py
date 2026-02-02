@@ -24,10 +24,10 @@ def cli():
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     # Version
-    version_parser = subparsers.add_parser("version", help="Get version.")
+    subparsers.add_parser("version", help="Get version.")
 
     # Configure
-    configure_parser = subparsers.add_parser("configure", help="Configure the application.")
+    subparsers.add_parser("configure", help="Configure the application.")
 
     # Archive utilities
     archive_parser = subparsers.add_parser("archive", help="Archive commands")
@@ -56,17 +56,24 @@ def cli():
     run_parser.add_argument("--forever", action="store_true", help="Run indefinitely")
 
     # Sync
-    sync_parser = subparsers.add_parser("sync", help="Sync files with remote archive")
+    subparsers.add_parser("sync", help="Sync files with remote archive")
 
     # Export
-    export_parser = subparsers.add_parser("export", help="Export into a gallery")
+    subparsers.add_parser("export", help="Export into a gallery")
 
     # Info
     info_parser = subparsers.add_parser("info", help="Show kksubs info")
     info_parser.add_argument("-r", "--recent", action='store_true', help="Show recent Projects.")
 
     # Show
-    show_parser = subparsers.add_parser("show", help="Show subtitled images")
+    subparsers.add_parser("show", help="Show subtitled images")
+
+    # Clear
+    subparsers.add_parser("clear", help="Clear all subtitled outputs")
+
+    # Merge
+    merge_parser = subparsers.add_parser("merge", help="Merge UserData from another project into current game")
+    merge_parser.add_argument("project_id", type=str, help="Project ID or pattern")
 
     args = parser.parse_args()
     command = args.command
@@ -128,6 +135,13 @@ def cli():
         pass
     if command == "export":
         controller.export_gallery()
+        pass
+    if command == "clear":
+        controller.clear()
+        pass
+    if command == "merge":
+        project_id = args.project_id
+        controller.merge_project(project_id)
         pass
 
     controller.close()

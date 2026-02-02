@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kksubs"
-version = "3.1.0"
+version = "3.2.0-dev"
 requires-python = ">=3.10"
 dependencies = [
     "natsort",
@@ -16,9 +16,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = [
+dev = [
     "pytest",
     "pytest-cov",
+    "ruff>=0.14.14",
 ]
 
 [project.scripts]
@@ -26,7 +27,7 @@ koi = "koi.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-exclude = ["test*"]
+exclude = ["tests*"]
 
 [tool.setuptools]
 include-package-data = true
@@ -35,7 +36,7 @@ include-package-data = true
 "resources.fonts.roboto" = ["*.ttf"]
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

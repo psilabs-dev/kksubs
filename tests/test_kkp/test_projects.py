@@ -18,10 +18,8 @@
 
 import tempfile
 import os
-from pathlib import Path
 import pytest
 
-from common.exceptions import InvalidProjectException
 from kkp.controller.project import ProjectController
 
 

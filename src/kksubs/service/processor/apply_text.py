@@ -19,6 +19,11 @@ def create_text_layer(
 ) -> Image.Image:
     image_width, image_height = image.size
 
+    if isinstance(color, list):
+        color = tuple(color)
+    if isinstance(stroke_color, list):
+        stroke_color = tuple(stroke_color)
+
     text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
     if content is None or not content or font is None:
         return text_layer
@@ -39,7 +44,7 @@ def create_text_layer(
 
     text_dimensions = [_get_text_dimensions(line, font, default_text_width=default_text_width, default_text_height=default_text_height) for line in wrapped_text]
     text_widths = list(map(lambda dim:dim[0], text_dimensions))
-    max_text_width = max(text_widths)
+    max(text_widths)
     num_lines = len(wrapped_text)
     sum_text_height = num_lines * default_text_height
 

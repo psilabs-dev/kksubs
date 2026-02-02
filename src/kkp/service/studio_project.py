@@ -5,9 +5,7 @@ import os
 import re
 import shutil
 import fnmatch
-import tempfile
 import datetime
-from natsort import natsorted
 
 from common.data.file import Bucket
 from common.exceptions import InvalidProjectException
@@ -39,17 +37,19 @@ class StudioProjectService:
         self.subtitle_file_names = subtitle_file_names
         self.file_service = FileService()
 
-    def get_sync_state(self, project_path) -> Dict:
-        sync_state = dict()
-        for file in self.studio_file_names:
-            file_path = os.path.join(project_path, file)
-            if not os.path.exists(file_path):
-                continue
-            if os.path.isfile(file_path):
-                sync_state[file_path] = os.path.getmtime(file_path)
-            if os.path.isdir(file_path):
-                sync_state[file_path] = Bucket(file_path).state()
-        return sync_state
+    # def get_sync_state(self, project_path) -> Dict:
+    #     # NOTE: This method is commented out due to redefinition with get_sync_state() at line ~191
+    #     # The parameterless version is currently in use.
+    #     sync_state = dict()
+    #     for file in self.studio_file_names:
+    #         file_path = os.path.join(project_path, file)
+    #         if not os.path.exists(file_path):
+    #             continue
+    #         if os.path.isfile(file_path):
+    #             sync_state[file_path] = os.path.getmtime(file_path)
+    #         if os.path.isdir(file_path):
+    #             sync_state[file_path] = Bucket(file_path).state()
+    #     return sync_state
 
     def to_project_path(self, project_name:str) -> str:
         """
@@ -311,7 +311,7 @@ class StudioProjectService:
             for name in project_names:
                 print(f"- {name}")
             print("-----")
-            confirmation = input(f"Confirm (y/n): ")
+            confirmation = input("Confirm (y/n): ")
             if confirmation!= "y":
                 return False
         

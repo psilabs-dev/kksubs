@@ -1,6 +1,9 @@
-from kksubs.data.abstract import *
-from common.utils.coalesce import *
-from kksubs.utils.sanitizers import *
+from copy import deepcopy
+
+import kksubs.data.subtitle.style
+from kksubs.data.abstract import BaseData
+from common.utils.coalesce import coalesce
+from kksubs.utils.sanitizers import to_float, to_integer, to_rgb_color, to_string, to_validated_value, to_xy_coords
 
 class TextData(BaseData):
     field_name = "text_data"
@@ -43,9 +46,9 @@ class TextData(BaseData):
             return
         self.font = coalesce(self.font, other.font)
         self.size = coalesce(self.size, other.size)
-        self.color = coalesce(self.color, other.color)
+        self.color = deepcopy(self.color) if self.color is not None else deepcopy(other.color)
         self.stroke_size = coalesce(self.stroke_size, other.stroke_size)
-        self.stroke_color = coalesce(self.stroke_color, other.stroke_color)
+        self.stroke_color = deepcopy(self.stroke_color) if self.stroke_color is not None else deepcopy(other.stroke_color)
         self.alpha = coalesce(self.alpha, other.alpha)
         self.text = coalesce(self.text, other.text)
 
@@ -152,9 +155,9 @@ class BoxData(BaseData):
         self.box_width = coalesce(self.box_width, other.box_width)
 
         if self.anchor is None and self.grid4 is None and self.grid10 is None:
-            self.anchor = other.anchor
-            self.grid4 = other.grid4
-            self.grid10 = other.grid10
+            self.anchor = deepcopy(other.anchor) if other.anchor is not None else None
+            self.grid4 = deepcopy(other.grid4) if other.grid4 is not None else None
+            self.grid10 = deepcopy(other.grid10) if other.grid10 is not None else None
 
         self.nudge = coalesce(self.nudge, other.nudge)
         self.rotate = coalesce(self.rotate, other.rotate)
@@ -328,6 +331,8 @@ class Mask(BaseData):
     def deserialize(cls, path=None):
         if path is None:
             return None
+        if isinstance(path, str):
+            return Mask(path=path)
         return Mask(**path)
     
     def coalesce(self, other:"Mask"):
@@ -354,13 +359,15 @@ class Background(BaseData):
     def get_default(cls):
         return Background(
         )
-    
+
     @classmethod
     def deserialize(cls, path=None):
         if path is None:
             return None
+        if isinstance(path, str):
+            return Background(path=path)
         return Background(**path)
-    
+
     def coalesce(self, other:"Background"):
         if other is None:
             return
@@ -368,5 +375,103 @@ class Background(BaseData):
 
     def correct_values(self):
         return
+
+    pass
+
+class CharacterDialogueConfig(BaseData):
+    field_name = "character_dialogue"
+
+    def __init__(
+            self,
+            enabled=None,
+            character_name=None,
+            separator=None,
+            spacing=None,
+            character=None,
+            dialogue=None,
+    ):
+        self.enabled = enabled
+        self.character_name = character_name
+        self.separator = separator
+        self.spacing = spacing
+        self.character = character
+        self.dialogue = dialogue
+        pass
+
+    @classmethod
+    def get_default(cls):
+        return CharacterDialogueConfig(
+            enabled=False,
+            character_name="",
+            separator=": ",
+            spacing=0,
+            character=None,
+            dialogue=None,
+        )
+
+    @classmethod
+    def deserialize(cls, data=None):
+        if data is None:
+            return None
+
+        enabled = data.get('enabled', False)
+        character_name = data.get('character_name', "")
+        separator = data.get('separator', ": ")
+        spacing = data.get('spacing', 0)
+
+        character_data = data.get('character')
+        dialogue_data = data.get('dialogue')
+
+        character = kksubs.data.subtitle.style.Style.deserialize(character_data) if character_data is not None else None
+        dialogue = kksubs.data.subtitle.style.Style.deserialize(dialogue_data) if dialogue_data is not None else None
+
+        return CharacterDialogueConfig(
+            enabled=enabled,
+            character_name=character_name,
+            separator=separator,
+            spacing=spacing,
+            character=character,
+            dialogue=dialogue,
+        )
+
+    def coalesce(self, other:"CharacterDialogueConfig"):
+        if other is None:
+            return
+
+        self.enabled = coalesce(self.enabled, other.enabled)
+        self.character_name = coalesce(self.character_name, other.character_name)
+        self.separator = coalesce(self.separator, other.separator)
+        self.spacing = coalesce(self.spacing, other.spacing)
+
+        if self.character is None:
+            self.character = deepcopy(other.character) if other.character is not None else None
+        elif other.character is not None:
+            self.character.coalesce(other.character)
+
+        if self.dialogue is None:
+            self.dialogue = deepcopy(other.dialogue) if other.dialogue is not None else None
+        elif other.dialogue is not None:
+            self.dialogue.coalesce(other.dialogue)
+
+    def correct_values(self):
+        if self.enabled is not None:
+            assert isinstance(self.enabled, bool)
+
+        if self.character_name is not None:
+            self.character_name = to_string(self.character_name)
+
+        if self.separator is not None:
+            self.separator = to_string(self.separator)
+
+        self.spacing = to_integer(self.spacing)
+
+        if self.enabled and not self.character_name:
+            raise ValueError("character_name is required when character_dialogue is enabled")
+
+        if self.character is not None:
+            self.character.correct_values()
+
+        if self.dialogue is not None:
+            self.dialogue.correct_values()
 
     pass

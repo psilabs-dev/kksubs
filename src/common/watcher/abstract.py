@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import logging
 import time
 import traceback
-from common.exceptions import *
+from common.exceptions import RetryWatcherPrompt
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +12,7 @@ class AbstractWatcher(ABC):
         self.sleep_time = 1
 
     def setup_watch(self):
-        logger.info(f'Setting up watcher.')
+        logger.info('Setting up watcher.')
 
     @abstractmethod
     def event_trigger_action(self):
