@@ -45,9 +45,9 @@ class TextData(BaseData):
             return
         self.font = coalesce(self.font, other.font)
         self.size = coalesce(self.size, other.size)
-        self.color = coalesce(self.color, other.color)
+        self.color = deepcopy(self.color) if self.color is not None else deepcopy(other.color)
         self.stroke_size = coalesce(self.stroke_size, other.stroke_size)
-        self.stroke_color = coalesce(self.stroke_color, other.stroke_color)
+        self.stroke_color = deepcopy(self.stroke_color) if self.stroke_color is not None else deepcopy(other.stroke_color)
         self.alpha = coalesce(self.alpha, other.alpha)
         self.text = coalesce(self.text, other.text)
 
@@ -154,9 +154,9 @@ class BoxData(BaseData):
         self.box_width = coalesce(self.box_width, other.box_width)
 
         if self.anchor is None and self.grid4 is None and self.grid10 is None:
-            self.anchor = other.anchor
-            self.grid4 = other.grid4
-            self.grid10 = other.grid10
+            self.anchor = deepcopy(other.anchor) if other.anchor is not None else None
+            self.grid4 = deepcopy(other.grid4) if other.grid4 is not None else None
+            self.grid10 = deepcopy(other.grid10) if other.grid10 is not None else None
 
         self.nudge = coalesce(self.nudge, other.nudge)
         self.rotate = coalesce(self.rotate, other.rotate)
@@ -330,6 +330,8 @@ class Mask(BaseData):
     def deserialize(cls, path=None):
         if path is None:
             return None
+        if isinstance(path, str):
+            return Mask(path=path)
         return Mask(**path)
     
     def coalesce(self, other:"Mask"):
@@ -361,6 +363,8 @@ class Background(BaseData):
     def deserialize(cls, path=None):
         if path is None:
             return None
+        if isinstance(path, str):
+            return Background(path=path)
         return Background(**path)
 
     def coalesce(self, other:"Background"):

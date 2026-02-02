@@ -19,6 +19,11 @@ def create_text_layer(
 ) -> Image.Image:
     image_width, image_height = image.size
 
+    if isinstance(color, list):
+        color = tuple(color)
+    if isinstance(stroke_color, list):
+        stroke_color = tuple(stroke_color)
+
     text_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
     if content is None or not content or font is None:
         return text_layer
