@@ -145,12 +145,9 @@ def _render_character_dialogue_subtitle(
     dialogue_style = config.dialogue if config.dialogue is not None else style
 
     # Ensure styles have defaults coalesced
-    if char_style.box_data.box_width is None:
-        from kksubs.data.subtitle.style_attributes import BoxData
-        char_style.box_data.coalesce(BoxData.get_default())
-    if dialogue_style.box_data.box_width is None:
-        from kksubs.data.subtitle.style_attributes import BoxData
-        dialogue_style.box_data.coalesce(BoxData.get_default())
+    from kksubs.data.subtitle.style import Style
+    char_style.coalesce(Style.get_default())
+    dialogue_style.coalesce(Style.get_default())
 
     # Get character font
     char_text_data = char_style.text_data

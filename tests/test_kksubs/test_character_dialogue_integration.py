@@ -154,3 +154,59 @@ character1: Hello, world!
         output_image = Image.open(output_image_path)
         assert output_image.size == (1920, 1080)
         output_image.close()
+
+
+def test_missing_font_size_rendering():
+    """Test that missing font size does not crash rendering."""
+    with tempfile.TemporaryDirectory() as test_dir:
+        controller = SubtitleController(test_dir)
+        controller.create()
+
+        image_dir = controller.get_image_directory()
+        generate_test_image(image_dir, 'bug_repro.png')
+
+        styles_content = """
+- style_id: buggy_style
+  character_dialogue:
+    enabled: true
+    character_name: "Buggy"
+    character:
+      text_data:
+        color: [255, 0, 0]
+    dialogue:
+      text_data:
+        color: [0, 255, 0]
+"""
+        styles_path = os.path.join(controller.workspace_directory, 'styles.yml')
+        with open(styles_path, 'w') as f:
+            f.write(styles_content)
+
+        scripts_dir = controller.get_scripts_directory()
+        draft_files = os.listdir(scripts_dir)
+        draft_path = os.path.join(scripts_dir, draft_files[0])
+
+        draft_content = """
+image_id: bug_repro.png
+buggy_style: Text content
+"""
+        with open(draft_path, 'w') as f:
+            f.write(draft_content)
+
+        # Should not crash and SHOULD render something (not return original image)
+        controller.add_subtitles(allow_multiprocessing=False)
+
+        output_dir = controller.get_output_directory_by_script(draft_files[0])
+        output_image_path = os.path.join(output_dir, 'bug_repro.png')
+        assert os.path.exists(output_image_path)
+        
+        # Verify that the image was actually modified (subtitles rendered)
+        # If the bug exists, it returns the original image, so this should fail.
+        # We need to compare pixel data or similar.
+        output_image = Image.open(output_image_path)
+        input_image = Image.open(os.path.join(image_dir, 'bug_repro.png'))
+        
+        # Simple check: different content
+        assert list(output_image.getdata()) != list(input_image.getdata()), "Output image is identical to input, implying render failure."
+        
+        output_image.close()
+        input_image.close()
