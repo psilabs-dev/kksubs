@@ -75,7 +75,7 @@ class Style(BaseData):
             gaussian=Gaussian.deserialize(values=style_dict.get(Gaussian.field_name)),
             motion=Motion.deserialize(values=style_dict.get(Motion.field_name)),
             background=Background.deserialize(path=style_dict.get(Background.field_name)),
-            mask=Background.deserialize(path=style_dict.get(Mask.field_name)),
+            mask=Mask.deserialize(path=style_dict.get(Mask.field_name)),
             character_dialogue=CharacterDialogueConfig.deserialize(data=style_dict.get(CharacterDialogueConfig.field_name)),
             styles=styles,
         )
@@ -85,54 +85,54 @@ class Style(BaseData):
             return
         self.style_id = coalesce(self.style_id, other.style_id)
         if self.text_data is None:
-            self.text_data = other.text_data
+            self.text_data = deepcopy(other.text_data) if other.text_data is not None else None
         else:
             self.text_data.coalesce(other.text_data)
         if self.outline_data is None:
-            self.outline_data = other.outline_data
+            self.outline_data = deepcopy(other.outline_data) if other.outline_data is not None else None
         else:
             self.outline_data.coalesce(other.outline_data)
         if self.outline_data_1 is None:
-            self.outline_data_1 = other.outline_data_1
+            self.outline_data_1 = deepcopy(other.outline_data_1) if other.outline_data_1 is not None else None
         else:
             self.outline_data_1.coalesce(other.outline_data_1)
         if self.box_data is None:
-            self.box_data = other.box_data
+            self.box_data = deepcopy(other.box_data) if other.box_data is not None else None
         else:
             self.box_data.coalesce(other.box_data)
         if essential:
             return
-        
+
         if self.asset_data is None:
-            self.asset_data = other.asset_data
+            self.asset_data = deepcopy(other.asset_data) if other.asset_data is not None else None
         else:
             self.asset_data.coalesce(other.asset_data)
         if self.brightness is None:
-            self.brightness = other.brightness
+            self.brightness = deepcopy(other.brightness) if other.brightness is not None else None
         else:
             self.brightness.coalesce(other.brightness)
         if self.gaussian is None:
-            self.gaussian = other.gaussian
+            self.gaussian = deepcopy(other.gaussian) if other.gaussian is not None else None
         else:
             self.gaussian.coalesce(other.gaussian)
         if self.motion is None:
-            self.motion = other.motion
+            self.motion = deepcopy(other.motion) if other.motion is not None else None
         else:
             self.motion.coalesce(other.motion)
         if self.background is None:
-            self.background = other.background
+            self.background = deepcopy(other.background) if other.background is not None else None
         else:
             self.background.coalesce(other.background)
         if self.mask is None:
-            self.mask = other.mask
+            self.mask = deepcopy(other.mask) if other.mask is not None else None
         else:
             self.mask.coalesce(other.mask)
         if self.character_dialogue is None:
-            self.character_dialogue = other.character_dialogue
+            self.character_dialogue = deepcopy(other.character_dialogue) if other.character_dialogue is not None else None
         else:
             self.character_dialogue.coalesce(other.character_dialogue)
         if not self.styles:
-            self.styles = other.styles
+            self.styles = deepcopy(other.styles) if other.styles is not None else None
 
     def inherit(self, style:"Style"):
         # inherit from other styles.

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from kksubs.data.abstract import BaseData
 from common.utils.coalesce import coalesce
 from kksubs.utils.sanitizers import to_float, to_integer, to_rgb_color, to_string, to_validated_value, to_xy_coords
@@ -439,12 +441,12 @@ class CharacterDialogueConfig(BaseData):
         self.spacing = coalesce(self.spacing, other.spacing)
 
         if self.character is None:
-            self.character = other.character
+            self.character = deepcopy(other.character) if other.character is not None else None
         elif other.character is not None:
             self.character.coalesce(other.character)
 
         if self.dialogue is None:
-            self.dialogue = other.dialogue
+            self.dialogue = deepcopy(other.dialogue) if other.dialogue is not None else None
         elif other.dialogue is not None:
             self.dialogue.coalesce(other.dialogue)
 
