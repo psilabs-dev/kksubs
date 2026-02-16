@@ -10,10 +10,10 @@ import os
 from copy import deepcopy
 from PIL import Image
 
-from kksubs.data.subtitle.style import Style
-from kksubs.data.subtitle.style_attributes import TextData, BoxData, CharacterDialogueConfig
-from kksubs.service.extraction.subtitle import extract_subtitle_groups
-from kksubs.service.extraction.style import extract_styles
+from kksubs.core.data.subtitle.style import Style
+from kksubs.core.data.subtitle.style_attributes import TextData, BoxData, CharacterDialogueConfig
+from kksubs.core.service.extraction.subtitle import extract_subtitle_groups
+from kksubs.core.service.extraction.style import extract_styles
 
 
 def test_coalesce_creates_independent_objects():

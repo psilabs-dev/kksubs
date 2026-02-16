@@ -20,7 +20,7 @@ import tempfile
 import os
 import pytest
 
-from kkp.controller.project import ProjectController
+from kksubs.kkp.controller.project import ProjectController
 
 
 def create_test_site(test_dir):

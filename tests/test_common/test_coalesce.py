@@ -1,4 +1,4 @@
-from common.utils.coalesce import coalesce
+from kksubs.common.utils.coalesce import coalesce
 
 
 def test_coalesce():

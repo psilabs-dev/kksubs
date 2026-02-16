@@ -1,6 +1,6 @@
 import pytest
-from kksubs.data.subtitle.style_attributes import CharacterDialogueConfig
-from kksubs.data.subtitle.style import Style
+from kksubs.core.data.subtitle.style_attributes import CharacterDialogueConfig
+from kksubs.core.data.subtitle.style import Style
 
 
 def test_character_dialogue_config_deserialize_basic():

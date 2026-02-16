@@ -2,7 +2,7 @@
 import tempfile
 import os
 from PIL import Image
-from kksubs.controller.subtitle import SubtitleController
+from kksubs.core.controller.subtitle import SubtitleController
 
 
 def generate_test_image(directory, image_name):

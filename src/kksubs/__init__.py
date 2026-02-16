@@ -1,4 +1,4 @@
-from kksubs.controller.subtitle import SubtitleController
+from kksubs.core.controller.subtitle import SubtitleController
 
 # basic functions
 def create_project(workspace_directory:str=None):

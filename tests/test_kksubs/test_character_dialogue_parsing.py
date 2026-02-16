@@ -2,9 +2,9 @@ import pytest
 import tempfile
 import os
 from PIL import Image
-from kksubs.service.extraction.subtitle import extract_subtitle_groups
-from kksubs.service.extraction.style import extract_styles
-from kksubs.data.subtitle.subtitle import CharacterDialogueSubtitle, Subtitle
+from kksubs.core.service.extraction.subtitle import extract_subtitle_groups
+from kksubs.core.service.extraction.style import extract_styles
+from kksubs.core.data.subtitle.subtitle import CharacterDialogueSubtitle, Subtitle
 
 
 @pytest.fixture
@@ -153,7 +153,7 @@ romeo: wherefore art thou
 def test_parse_character_dialogue_with_matrix(temp_image_dir):
     """Test parsing character/dialogue with matrix-generated style IDs."""
     # Check existing matrix tests to understand correct syntax
-    from kksubs.data.subtitle.style_row_enum import STYLE_ROW_ENUM
+    from kksubs.core.data.subtitle.style_row_enum import STYLE_ROW_ENUM
 
     # grid10_complete should already be defined in the enum
     assert STYLE_ROW_ENUM.get('grid10_complete') is not None

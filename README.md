@@ -13,7 +13,7 @@ The program is intended to work on a Windows OS with Python 3.10 or later.
 
 Open a Python virtual environment and install the Git repository. For example:
 ```console
-$ pip install git+https://github.com/psilabs-dev/kksubs.git
+$ uv tool install git+https://github.com/psilabs-dev/kksubs.git
 ```
 Configure the application:
 ```console

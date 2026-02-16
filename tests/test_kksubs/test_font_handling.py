@@ -3,17 +3,17 @@ import logging
 import pytest
 from PIL import Image
 
-from kksubs.data.subtitle.subtitle import Subtitle
-from kksubs.data.subtitle.style import Style
-from kksubs.data.subtitle.style_attributes import TextData, BoxData
-from kksubs.service.subtitle import add_subtitle_to_image
+from kksubs.core.data.subtitle.subtitle import Subtitle
+from kksubs.core.data.subtitle.style import Style
+from kksubs.core.data.subtitle.style_attributes import TextData, BoxData
+from kksubs.core.service.subtitle import add_subtitle_to_image
 
 
 @pytest.fixture(autouse=True)
 def setup_logging():
     """Fixture to set up logging configuration for tests."""
     # Suppress warnings for cleaner test output
-    logging.getLogger('kksubs.service.subtitle').setLevel(logging.ERROR)
+    logging.getLogger('kksubs.core.service.subtitle').setLevel(logging.ERROR)
 
 
 def test_missing_font():
