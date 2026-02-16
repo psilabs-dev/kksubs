@@ -8,14 +8,14 @@ import tempfile
 import os
 from PIL import Image
 
-from kksubs.data.subtitle.style_attributes import (
+from kksubs.core.data.subtitle.style_attributes import (
     BoxData, Mask, Background, TextData, CharacterDialogueConfig
 )
-from kksubs.data.subtitle.style import Style
-from kksubs.data.subtitle.subtitle import CharacterDialogueSubtitle
-from kksubs.service.subtitle import _render_character_dialogue_subtitle
-from kksubs.service.extraction.subtitle import extract_subtitle_groups
-from kksubs.service.extraction.style import extract_styles
+from kksubs.core.data.subtitle.style import Style
+from kksubs.core.data.subtitle.subtitle import CharacterDialogueSubtitle
+from kksubs.core.service.subtitle import _render_character_dialogue_subtitle
+from kksubs.core.service.extraction.subtitle import extract_subtitle_groups
+from kksubs.core.service.extraction.style import extract_styles
 
 
 def test_boxdata_coalesce_independence():

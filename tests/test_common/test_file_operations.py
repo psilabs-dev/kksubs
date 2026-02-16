@@ -6,8 +6,8 @@ from typing import List
 import pytest
 import shutil
 
-from common.data.file import Bucket
-from common.utils.file import sync_bidirectional, sync_unidirectional, transfer
+from kksubs.common.data.file import Bucket
+from kksubs.common.utils.file import sync_bidirectional, sync_unidirectional, transfer
 
 logger = logging.getLogger(__name__)
 

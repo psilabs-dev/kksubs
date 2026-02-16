@@ -18,7 +18,7 @@ import tempfile
 import os
 import pytest
 
-from kksubs.controller.subtitle import SubtitleController
+from kksubs.core.controller.subtitle import SubtitleController
 
 
 def generate_images(directory, images):
